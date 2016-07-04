@@ -1,0 +1,4 @@
+1) SMART Attributes Monitoring Plugin
+https://www.thomas-krenn.com/en/wiki/SMART_Attributes_Monitoring_Plugin
+https://github.com/thomas-krenn/check_smart_attributes.git
+version 1.4 (19.05.2016)
