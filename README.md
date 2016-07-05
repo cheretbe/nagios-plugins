@@ -18,6 +18,7 @@ service nagios-nrpe-server restart
 visudo
 # Allow NRPE process access to smart parameters
 nagios ALL=(root)NOPASSWD:/usr/sbin/smartctl
+
 /var/lib/nagios/nagios-plugins/check_smart_attributes/check_smart_attributes -dbj /var/lib/nagios/nagios-plugins/custom_check_smartdb.json -d /dev/sda -d /dev/sdb -d /dev/sdc -d /dev/sdd -d /dev/sde -d /dev/sdf
 ```
 More info on critical attributes:
@@ -39,4 +40,14 @@ Sample check_smartcfg.json contents
     }
   }
 }
+```
+
+## ZFS Pool Status
+
+```
+visudo
+# Allow NRPE process access to ZFS pool status
+nagios  ALL=NOPASSWD: /var/lib/nagios/nagios-plugins/check_zpools/check_zpools.sh -p ALL -w 80 -c 90
+
+command[check_zfs_pool]=sudo /var/lib/nagios/nagios-plugins/check_zpools/check_zpools.sh -p ALL -w 80 -c 90
 ```
