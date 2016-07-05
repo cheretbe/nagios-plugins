@@ -51,3 +51,10 @@ nagios  ALL=NOPASSWD: /var/lib/nagios/nagios-plugins/check_zpools/check_zpools.s
 
 command[check_zfs_pool]=sudo /var/lib/nagios/nagios-plugins/check_zpools/check_zpools.sh -p ALL -w 80 -c 90
 ```
+
+## BURP Backups Status
+
+```
+# 3000 min = 50 h, 5760 min = 96 h = 4 days
+/var/lib/nagios/nagios-plugins/check_burp_backup/check_burp_backup.sh -H bykov -w 3000 -c 5760 -d /mnt/zfs-data/burp/ -p
+```
