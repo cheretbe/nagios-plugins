@@ -9,3 +9,7 @@ apt-get install libconfig-json-perl smartmontools
 http://www.claudiokuenzler.com/nagios-plugins/check_zpools.php
 https://github.com/Napsty/check_zpools
 version 2014-03-11
+
+3) Check BURP Backup Age Plugin
+https://github.com/pierre-guillot/check_burp_backup
+Commit 0472165 (30.09.2015)
