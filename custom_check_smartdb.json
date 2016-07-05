@@ -13,7 +13,7 @@
 				"194"  : "RAW_VALUE", # Temperature_Celsius
 				"197"  : "RAW_VALUE", # Current_Pending_Sector
 				"198"  : "RAW_VALUE", # Offline_Uncorrectable
-				"199" : "RAW_VALUE"   # UDMA_CRC_Error_Count
+				"199"  : "RAW_VALUE"  # UDMA_CRC_Error_Count
 			},
 			"Threshs" : {
 				"5"   : ["0","5"],
@@ -30,23 +30,27 @@
 			"Perfs" : ["9","194"]
 		},
 		"Western Digital" : {
-			"Device" : ["Western Digital Caviar Green (AF)","Western Digital Caviar Green (AF, SATA 6Gb/s)"],
+			"Device" : ["Western Digital Caviar Green"],
 			"ID#" : {
-				"5" : "RAW_VALUE",
-				"1024" : "VALUE"
+				"5"    : "RAW_VALUE", # Reallocated_Sector_Ct
+				"9"    : "RAW_VALUE", # Power_On_Hours
+				"10"   : "RAW_VALUE", # Spin_Retry_Count
+				"194"  : "RAW_VALUE", # Temperature_Celsius
+				"196"  : "RAW_VALUE", # Reallocated_Event_Count
+				"197"  : "RAW_VALUE", # Current_Pending_Sector
+				"198"  : "RAW_VALUE", # Offline_Uncorrectable
+				"199"  : "RAW_VALUE"  # UDMA_CRC_Error_Count
 			},
 			"Threshs" : {
-				"5" : ["20","40"],
-				"171" : ["16:","11:"],
-				"172" : ["16:","11:"],
-				"184" : ["96:","91:"],
-				"187" : ["0","10"],
-				"199" : ["0","10"],
-				"232" : ["16:","11:"],
-				"233" : ["16:","6:"],
-				"1024" : ["0","10"]
+				"5"   : ["0","5"],
+				"10"  : ["0","5"],
+				"194" : ["45","50"],
+				"196" : ["0","5"],
+				"197" : ["0","5"],
+				"198" : ["0","5"],
+				"199" : ["0","5"]
 			},
-			"Perfs" : ["233","241","242"]
+			"Perfs" : ["9","194"]
 		}
 	}
 }
