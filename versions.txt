@@ -4,3 +4,8 @@ https://github.com/thomas-krenn/check_smart_attributes.git
 version 1.4 (19.05.2016)
 Requirements:
 apt-get install libconfig-json-perl smartmontools
+
+2) Check ZFS Pools Plugin
+http://www.claudiokuenzler.com/nagios-plugins/check_zpools.php
+https://github.com/Napsty/check_zpools
+version 2014-03-11
