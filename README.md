@@ -70,7 +70,8 @@ nagios  ALL= (backuppc) NOPASSWD: /var/lib/nagios/nagios-plugins/check_backuppc/
 /var/lib/nagios/nagios-plugins/check_backuppc/check_backuppc
 
 # Restrict access to the script since it uses passwordless sudo
-chmod 700 /var/lib/nagios/nagios-plugins/check_backuppc/check_backuppc
+chown :backuppc /var/lib/nagios/nagios-plugins/check_backuppc/check_backuppc
+chmod 750 /var/lib/nagios/nagios-plugins/check_backuppc/check_backuppc
 
 command[check_backuppc]=/usr/bin/sudo -u backuppc /var/lib/nagios/nagios-plugins/check_backuppc/check_backuppc
 ```
