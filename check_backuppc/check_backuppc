@@ -1,0 +1,237 @@
+#!/usr/bin/perl
+#
+# check_backuppc: a Nagios plugin to check the status of BackupPC
+#
+# Tested against BackupPC 3.2.1 and Nagios 3
+#   <http://backuppc.sourceforge.net>
+#   <http://nagios.org>
+#
+# AUTHORS
+#   Benjamin Renard  <brenard@easter-eggs.com>
+#
+# Fork from check_backuppc 1.1.0 write by Seneca Cunningham
+# <tetragon@users.sourceforge.net>.
+#
+# COPYRIGHT
+#   Copyright (C) 2013       Easter-eggs
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#
+
+use strict;
+no utf8;
+
+# Nagios
+use lib "/usr/lib/nagios/plugins";
+use utils qw(%ERRORS $TIMEOUT);
+use POSIX qw(strftime difftime);
+use Getopt::Long;
+Getopt::Long::Configure('bundling');
+
+# BackupPC
+use lib "/usr/share/backuppc/lib";
+use BackupPC::Lib;
+
+my $version = '1.1.2';
+my $warnDaysOld = 2;
+my $critDaysOld = 7;
+my $verbose = 0;
+my $opt_V = 0;
+my $opt_h = 0;
+my $goodOpt = 0;
+my @ownerOnly;
+my @hostsDesired;
+my @hostsExcluded;
+my %Status;
+my $statusCode = 'OK';
+my $ok_count = 0;
+my $unknown_count = 0;
+my $warning_count = 0;
+my $critical_count = 0;
+
+
+# Process options
+$goodOpt = GetOptions(
+	'v+' => \$verbose, 'verbose+' => \$verbose, 
+	'c=f' => \$critDaysOld, 'critical=f' => \$critDaysOld,
+	'w=f' => \$warnDaysOld, 'warning=f' => \$warnDaysOld,
+	'o=s' => \@ownerOnly, 'owner=s' => \@ownerOnly,
+	'V' => \$opt_V, 'version' => \$opt_V,
+	'h' => \$opt_h, 'help' => \$opt_h,
+	'H=s' => \@hostsDesired, 'hostname=s' => \@hostsDesired,
+	'x=s' => \@hostsExcluded, 'exclude=s' => \@hostsExcluded);
+
+@hostsDesired = () if $#hostsDesired < 0;
+@hostsExcluded = () if $#hostsExcluded < 0;
+
+if ($opt_V)
+{
+	print "check_backuppc - " . $version . "\n";
+	exit $ERRORS{'OK'};
+}
+if ($opt_h or not $goodOpt)
+{
+	print "check_backuppc - " . $version . "\n";
+	print "A Nagios plugin to check on BackupPC backup status.\n\n";
+	print "Options:\n";
+	print "  --hostname,-H      only check the specified host\n";
+	print "  --exclude,-x       do not check the specified host\n";
+	print "  --owner,-o         do only hosts of specified user\n";
+	print "  --warning,-w       days old of last good backup to cause a warning\n";
+	print "  --critical,-c      days old of last good backup to be critical\n";
+	print "  --verbose,-v       increase verbosity\n";
+	print "  --version,-V       display plugin version\n";
+	print "  --help,-h          display this message\n\n";
+	exit $ERRORS{'OK'} if $goodOpt;
+	exit $ERRORS{'UNKNOWN'};
+}
+if ($warnDaysOld > $critDaysOld)
+{
+	print("BACKUPPC UNKNOWN - Warning threshold must be <= critical\n");
+	exit $ERRORS{'UNKNOWN'};
+}
+
+# Connect to BackupPC
+my $server;
+if (!($server = BackupPC::Lib->new))
+{
+	print "BACKUPPC CRITICAL - Couldn't connect to BackupPC\n";
+	exit $ERRORS{'CRITICAL'};
+}
+my %Conf = $server->Conf();
+
+$server->ChildInit();
+
+my $err = $server->ServerConnect($Conf{ServerHost}, $Conf{ServerPort});
+if ($err)
+{
+	print("BACKUPPC UNKNOWN - Can't connect to server ($err)\n");
+	exit $ERRORS{'UNKNOWN'};
+}
+
+# query the BackupPC server for host status
+my $status_raw = $server->ServerMesg('status hosts');
+my $hosts_infos = $server->HostInfoRead();
+
+# undump the output... BackupPC uses Data::Dumper
+eval $status_raw;
+
+# check the dumped output
+my $hostCount = 0;
+
+foreach my $host (@hostsDesired, @hostsExcluded)
+{
+	if (not grep {/^$host$/} keys(%Status))
+	{
+		print("BACKUPPC UNKNOWN - Unknown host ($host)\n");
+		exit $ERRORS{'UNKNOWN'};
+	}
+}
+
+# host status checks
+foreach my $host (sort(keys(%Status)))
+{
+	next if $host =~ /^ /;
+	my $owner = $hosts_infos->{$host}->{user};
+	next if (@ownerOnly and not grep {/$owner/} @ownerOnly);
+	my %host_conf = %{$server->ConfigDataRead($host)};
+	$Status{$host}{BackupsDisable} = $host_conf{BackupsDisable};
+	next if ( $Status{$host}{BackupsDisable} );
+	next if (@hostsDesired and not grep {/^$host$/} @hostsDesired);
+	next if (@hostsExcluded and grep {/^$host$/} @hostsExcluded);
+	next if ($Status{$host}{'type'} eq 'archive');
+	$Status{$host}{'statusCode'} = 'OK';
+	$hostCount++;
+	# Debug
+	if ($verbose == 2)
+	{
+		print "Host $host state " . $Status{$host}{'state'} . "\n";
+		print "  with reason: " . $Status{$host}{'reason'} . "\n";
+		print "  with error: " . $Status{$host}{'error'} . "\n";
+		print "  with owner: $owner\n\n";
+	}
+	# Check host error
+	if ($Status{$host}{'error'})
+	{
+		$Status{$host}{statusMsg} = "error: ".$Status{$host}{'error'}." / ".$Status{$host}{'reason'};
+	} else {
+		$Status{$host}{statusMsg} = "status: ".$Status{$host}{'state'};
+	}
+
+	# Check last good backup time
+	$Status{$host}{'lastGoodBackupDays'} = difftime(time(), $Status{$host}{'lastGoodBackupTime'}) / (3600 * 24) if ( defined $Status{$host}{'lastGoodBackupTime'} );
+	if ( ! $Status{$host}{'lastGoodBackupDays'} ) {
+		$Status{$host}{'startDays'} = difftime(time(), $Status{$host}{'startTime'}) / (3600 * 24);
+		if ( $Status{$host}{'startDays'} > $critDaysOld ) {
+			$Status{$host}{statusMsg} .= ", no backups";
+			$Status{$host}{statusCode} = 'CRITICAL';
+			$statusCode = 'CRITICAL';
+		} elsif ( $Status{$host}{'startDays'} > $warnDaysOld ) {
+			$Status{$host}{statusMsg} .= ", no backups";
+			$Status{$host}{statusCode} = 'WARNING' unless ( $Status{$host}{statusCode} = 'CRITICAL' );
+			$statusCode = 'WARNING' unless ( $statusCode eq 'CRITICAL' );
+		}
+	} elsif ( $Status{$host}{'lastGoodBackupDays'} > $critDaysOld )
+	{
+		$Status{$host}{statusMsg} .= ", last good backup have ".sprintf("%.1f", $Status{$host}{'lastGoodBackupDays'})." days";
+		$Status{$host}{statusCode} = 'CRITICAL';
+		$statusCode = 'CRITICAL';
+	} 
+	elsif ( $Status{$host}{'lastGoodBackupDays'} > $warnDaysOld )
+	{
+		$Status{$host}{statusMsg} .= ", last good backup have ".sprintf("%.1f",$Status{$host}{'lastGoodBackupDays'})." days";
+		$Status{$host}{statusCode} = 'WARNING' unless ( $Status{$host}{statusCode} = 'CRITICAL' );
+		$statusCode = 'WARNING' unless ( $statusCode eq 'CRITICAL' );
+	} else {
+		$Status{$host}{statusMsg} .= ", last good backup have ".sprintf("%.1f",$Status{$host}{'lastGoodBackupDays'})." days";
+	}
+	$ok_count++ if ( $Status{$host}{statusCode} eq 'OK' );
+	$unknown_count++ if ( $Status{$host}{statusCode} eq 'UNKNOWN' );
+	$warning_count++ if ( $Status{$host}{statusCode} eq 'WARNING' );
+	$critical_count++ if ( $Status{$host}{statusCode} eq 'CRITICAL' );
+}
+
+
+my $statusMsg = "BACKUPPC $statusCode";
+
+if ( $statusCode eq 'OK' ) {
+	if ( $verbose && scalar(@hostsDesired) == 1 ) {
+		$statusMsg .= " (".$Status{$hostsDesired[0]}{statusMsg}.")";
+	} else {
+		$statusMsg .= " ($ok_count OK)";
+	}
+} else {
+	if ( $verbose ) {
+		$statusMsg .= " (";
+		my $first_host = 1;
+		foreach my $host ( keys %Status ) {
+			next if (@hostsDesired and not grep {/^$host$/} @hostsDesired);
+			next if (@hostsExcluded and grep {/^$host$/} @hostsExcluded);
+			next if ( $Status{$host}{BackupsDisable} );
+			next if ($Status{$host}{'type'} eq 'archive');
+			if ( $Status{$host}{statusCode} ne 'OK' ) {
+				$statusMsg .= ", " unless ( $first_host );
+				$statusMsg .= "$host: ".$Status{$host}{statusCode}." - ".$Status{$host}{statusMsg};
+				$first_host = 0 if ( $first_host );
+			}
+		}
+		$statusMsg .= ")";
+	} else {
+		$statusMsg .= " ( $ok_count OK, $unknown_count UNKNOWN, $warning_count WARNING, $critical_count CRITICAL)";
+	}
+}
+
+print "$statusMsg\n";
+exit $ERRORS{$statusCode};

@@ -13,3 +13,10 @@ version 2014-03-11
 3) Check BURP Backup Age Plugin
 https://github.com/pierre-guillot/check_burp_backup
 Commit 0472165 (30.09.2015)
+
+4) Check BackupPC Status Plugin
+https://exchange.nagios.org/directory/Plugins/Backup-and-Recovery/BackupPC/check_backuppc-(new)/details
+http://git.zionetrix.net/check_backuppc
+Download URL:
+http://git.zionetrix.net/download/check_backuppc/check_backuppc
+version 1.1.2 (17.11.2015)
