@@ -51,6 +51,27 @@
 				"199" : ["0","5"]
 			},
 			"Perfs" : ["9","194"]
+		},
+		"Plextor" : {
+			"Device" : ["PLEXTOR PX-AG256M6e"],
+			"ID#" : {
+				"5"   : "RAW_VALUE", # Reallocated_Sector_Ct
+				"9"   : "RAW_VALUE", # Power_On_Hours
+				"181" : "RAW_VALUE", # Program_Fail_Cnt_Total
+				"182" : "RAW_VALUE", # Erase_Fail_Count_Total
+				"196" : "RAW_VALUE", # Reallocated_Event_Count
+				"198" : "RAW_VALUE", # Offline_Uncorrectable
+				"199" : "RAW_VALUE"  # UDMA_CRC_Error_Count
+			},
+			"Threshs" : {
+				"5"   : ["0","5"],
+				"181" : ["0","5"],
+				"182" : ["0","5"],
+				"196" : ["0","5"],
+				"198" : ["0","5"],
+				"199" : ["0","5"]
+			},
+			"Perfs" : ["9"]
 		}
 	}
 }
