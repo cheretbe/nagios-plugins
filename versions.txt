@@ -20,3 +20,9 @@ http://git.zionetrix.net/check_backuppc
 Download URL:
 http://git.zionetrix.net/download/check_backuppc/check_backuppc
 version 1.1.2 (17.11.2015)
+
+4) NSCA Win32 Client
+https://exchange.nagios.org/directory/Addons/Passive-Checks/NSCA-Win32-Client/details
+https://exchange.nagios.org/components/com_mtree/attachment.php?link_id=550&cf_id=29
+Source: https://exchange.nagios.org/components/com_mtree/attachment.php?link_id=550&cf_id=24
+No version info
