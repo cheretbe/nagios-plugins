@@ -439,7 +439,7 @@
 			"Perfs" : ["194"]
 		},
 		"Western Digital RE4" : {
-			"Device" : ["Western Digital RE4","Western Digital RE4 2TB","Western Digital RE4 1TB","Western Digital RE4 500G","WDC WD2003FYYS-02W0B1","WDC WD1003FBYX-01Y7B0","WDC WD5003ABYX-01WERA1"],
+			"Device" : ["Western Digital RE4","Western Digital RE4 2TB","Western Digital RE4 1TB","Western Digital RE4 500G","WDC WD2003FYYS-02W0B1","WDC WD1003FBYX-01Y7B0","WDC WD5003ABYX-01WERA1","WDC WD10EZRX-00DC0B0"],
 			"ID#" : {
 				"1" : "VALUE", # Raw Read Error Rate
 				"3" : "VALUE", # Spin Up Time
