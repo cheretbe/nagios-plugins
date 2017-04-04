@@ -4,7 +4,7 @@ Custom Nagios plugins collection (downloaded and self-written)
 ```
 apt-get install git libconfig-json-perl smartmontools nagios-plugins nagios-nrpe-server
 # As user nagios (temporary allow shell via vipw)
-git clone https://git.beercaps.ru:50003/orlov/nagios-plugins.git
+git clone https://github.com/cheretbe/nagios-plugins.git
 # As root
 vi /etc/nagios/nrpe.cfg
 # allowed_hosts=127.0.0.1, nagios.rs-kgr.local
