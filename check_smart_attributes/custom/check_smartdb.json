@@ -30,7 +30,7 @@
 			"Perfs" : ["9","194"]
 		},
 		"Western Digital" : {
-			"Device" : ["Western Digital Caviar Green"],
+			"Device" : ["Western Digital Caviar Green", "Western Digital Green"],
 			"ID#" : {
 				"5"    : "RAW_VALUE", # Reallocated_Sector_Ct
 				"9"    : "RAW_VALUE", # Power_On_Hours
