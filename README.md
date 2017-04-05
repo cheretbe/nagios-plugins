@@ -14,16 +14,17 @@ service nagios-nrpe-server restart
 
 ## HDD SMART Attributes
 
-```
+```bash
 visudo
 # Allow NRPE process access to smart parameters
 nagios ALL=(root)NOPASSWD:/usr/sbin/smartctl
 
-/var/lib/nagios/nagios-plugins/check_smart_attributes/check_smart_attributes -dbj /var/lib/nagios/nagios-plugins/custom_check_smartdb.json -d /dev/sda -d /dev/sdb -d /dev/sdc -d /dev/sdd -d /dev/sde -d /dev/sdf
+# as user nagios
+/var/lib/nagios/nagios-plugins/check_smart_attributes/check_smart_attributes -dbj /var/lib/nagios/nagios-plugins/check_smart_attributes/custom/check_smartdb.json -d /dev/sda -d /dev/sdb
 ```
 `/etc/nagios/nrpe.cfg` entry example:
 ```
-command[check_smart]=/var/lib/nagios/nagios-plugins/check_smart_attributes/check_smart_attributes -dbj /var/lib/nagios/nagios-plugins/custom_check_smartdb.json -d /dev/sda -d /dev/sdb -d /dev/sdc -d /dev/sdd -d /dev/sde -d /dev/sdf
+command[check_smart]=/var/lib/nagios/nagios-plugins/check_smart_attributes/check_smart_attributes -dbj /var/lib/nagios/nagios-plugins/check_smart_attributes/custom/check_smartdb.json -d /dev/sda -d /dev/sdb
 ```
 More info on critical attributes:
 https://en.wikipedia.org/wiki/S.M.A.R.T.#Known_ATA_S.M.A.R.T._attributes
