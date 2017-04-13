@@ -62,13 +62,13 @@ command[check_zfs_pool]=sudo /var/lib/nagios/nagios-plugins/check_zpools/check_z
 
 ## BURP Backups Status
 
-```
+```bash
 # 3000 min = 50 h, 5760 min = 96 h = 4 days
 /var/lib/nagios/nagios-plugins/check_burp_backup/check_burp_backup.sh -H bykov -w 3000 -c 5760 -d /mnt/zfs-data/burp/ -p
 ```
 
 ## BackupPC Status
-```
+```bash
 visudo
 # Allow NRPE process to run BackupPC plugin as backuppc user
 nagios  ALL= (backuppc) NOPASSWD: /var/lib/nagios/nagios-plugins/check_backuppc/check_backuppc
@@ -78,5 +78,10 @@ nagios  ALL= (backuppc) NOPASSWD: /var/lib/nagios/nagios-plugins/check_backuppc/
 chown :backuppc /var/lib/nagios/nagios-plugins/check_backuppc/check_backuppc
 chmod 750 /var/lib/nagios/nagios-plugins/check_backuppc/check_backuppc
 
-command[check_backuppc]=/usr/bin/sudo -u backuppc /var/lib/nagios/nagios-plugins/check_backuppc/check_backuppc
+# command[check_backuppc]=/usr/bin/sudo -u backuppc /var/lib/nagios/nagios-plugins/check_backuppc/check_backuppc
+```
+
+## Ubuntu Unattended Upgrades
+```bash
+#command[check_unattended_upgrades]=/var/lib/nagios/nagios-plugins/check_ubuntu_unattended_upgrades/unattended_upgrades.py
 ```

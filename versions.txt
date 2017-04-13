@@ -27,6 +27,6 @@ https://exchange.nagios.org/components/com_mtree/attachment.php?link_id=550&cf_i
 Source: https://exchange.nagios.org/components/com_mtree/attachment.php?link_id=550&cf_id=24
 No version info
 
-5) Ubuntu Unattended Upgrades Reboot Plugin
+5) Ubuntu Unattended Upgrades Plugin
 https://github.com/JivanAmara/nagios_unattended_upgrades_reboot_plugin
 version 1.2 (26.03.2015)
