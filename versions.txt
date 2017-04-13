@@ -26,3 +26,7 @@ https://exchange.nagios.org/directory/Addons/Passive-Checks/NSCA-Win32-Client/de
 https://exchange.nagios.org/components/com_mtree/attachment.php?link_id=550&cf_id=29
 Source: https://exchange.nagios.org/components/com_mtree/attachment.php?link_id=550&cf_id=24
 No version info
+
+5) Ubuntu Unattended Upgrades Reboot Plugin
+https://github.com/JivanAmara/nagios_unattended_upgrades_reboot_plugin
+version 1.2 (26.03.2015)
