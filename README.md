@@ -3,7 +3,7 @@ Custom Nagios plugins collection (downloaded and self-written)
 ## Installation
 ```bash
 apt-get install git libconfig-json-perl smartmontools nagios-plugins nagios-nrpe-server
-# As user nagios (temporary allow shell via vipw)
+# As user nagios (temporary allow shell via vipw) in the home dir (/var/lib/nagios, check with pwd)
 git clone https://github.com/cheretbe/nagios-plugins.git
 # As root
 vi /etc/nagios/nrpe.cfg
