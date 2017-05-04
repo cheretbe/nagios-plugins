@@ -97,5 +97,5 @@ else
 fi
 
 echoVerboseMsg "Removing temporary script file '$this_script_full_path'"
-cat $status_file_path
+rm "$this_script_full_path"
 exit 0
