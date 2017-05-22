@@ -12,6 +12,21 @@ vi /etc/nagios/nrpe.cfg
 service nagios-nrpe-server restart
 ```
 
+/etc/logrotate.d/nagious-plugins-update
+```
+/home/nagios/log/nagious-plugins-update.log {
+	monthly
+	rotate 3
+  size 50M
+	compress
+	delaycompress
+	missingok
+	notifempty
+	create 644 nagios nagios
+}
+```
+https://www.digitalocean.com/community/tutorials/how-to-manage-log-files-with-logrotate-on-ubuntu-12-10
+
 ## HDD SMART Attributes
 
 ```bash
