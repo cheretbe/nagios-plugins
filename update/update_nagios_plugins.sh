@@ -20,6 +20,16 @@ function writeStatus () {
   echo "$(date -Iseconds);$1;$2" >$status_file_path
 }
 
+function startService () {
+  echoVerboseMsg "Starting '$1' service"
+  sudo -n /usr/sbin/service $1 start
+}
+
+function stopService () {
+  echoVerboseMsg "Stopping '$1' service"
+  sudo -n /usr/sbin/service $1 stop
+}
+
 
 while [[ $# -gt 0 ]]
 do
@@ -79,8 +89,8 @@ else
   /usr/sbin/service nagios status >/dev/null 2>&1
   nagios_service_status=$?
 
-  if [ $nrpe_service_status -eq 0 ]; then sudo -n /usr/sbin/service nagios-nrpe-server stop; fi 
-  if [ $nagios_service_status -eq 0 ]; then sudo -n /usr/sbin/service nagios stop; fi 
+  if [ $nrpe_service_status -eq 0 ]; then stopService nagios-nrpe-server; fi 
+  if [ $nagios_service_status -eq 0 ]; then stopService nagios; fi 
 
   echoVerboseMsg "Pulling updates"
   git_output=$((git pull) 2>&1)
@@ -92,8 +102,8 @@ else
     writeStatus "OK" "Repository has been updated"
   fi
 
-  if [ $nrpe_service_status -eq 0 ]; then sudo -n /usr/sbin/service nagios-nrpe-server start; fi
-  if [ $nagios_service_status -eq 0 ]; then sudo -n /usr/sbin/service nagios start; fi
+  if [ $nrpe_service_status -eq 0 ]; then startService nagios-nrpe-server; fi
+  if [ $nagios_service_status -eq 0 ]; then startService nagios; fi
 fi
 
 echoVerboseMsg "Removing temporary script file '$this_script_full_path'"
