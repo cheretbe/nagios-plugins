@@ -19,9 +19,9 @@ service nagios-nrpe-server restart
 
 # Don't allow group writing to the directory to avoid logrotate skipping
 # rotation "because parent directory has insecure permissions"
-mkdir -p -m 744 /var/lib/nagios/log
+mkdir -p -m 755 /var/lib/nagios/log
 # on server:
-mkdir -p -m 744 /home/nagios/log
+mkdir -p -m 755 /home/nagios/log
 
 # as root
 printf "# Check for repository updates daily\n%02d %02d * * * nagios /var/lib/nagios/nagios-plugins/update/update_nagios_plugins.sh --verbose >>/var/lib/nagios/log/nagious-plugins-update.log\n" $((RANDOM % 60)) $((RANDOM % 25)) >/etc/cron.d/nagious-plugins-update
