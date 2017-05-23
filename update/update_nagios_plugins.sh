@@ -62,8 +62,8 @@ if [ $do_update -eq 0 ]; then
   exit 1
 fi
 
-status_file_path="/home/nagios/plugins_update_status"
-git_repo_path="/home/nagios/nagios-plugins"
+status_file_path="${HOME}/plugins_update_status"
+git_repo_path="${HOME}/nagios-plugins"
 
 echoMsg "Checking for Nagios plugins repo updates"
 
