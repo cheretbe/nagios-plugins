@@ -130,3 +130,8 @@ chmod 750 /var/lib/nagios/nagios-plugins/check_backuppc/check_backuppc
 ```bash
 #command[check_unattended_upgrades]=/var/lib/nagios/nagios-plugins/check_ubuntu_unattended_upgrades/unattended_upgrades.py
 ```
+Add to `/etc/apt/apt.conf.d/20auto-upgrades`:
+```
+APT::Periodic::Download-Upgradeable-Packages "1";
+APT::Periodic::AutocleanInterval "7";
+```
