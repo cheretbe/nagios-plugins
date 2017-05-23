@@ -54,6 +54,9 @@ cat >/etc/logrotate.d/nagious-plugins-update <<EOL
   create 644 nagios nagios
 }
 EOL
+
+#Check log rotation status
+logrotate -d /etc/logrotate.d/nagious-plugins-update
 ```
 https://www.digitalocean.com/community/tutorials/how-to-manage-log-files-with-logrotate-on-ubuntu-12-10
 
