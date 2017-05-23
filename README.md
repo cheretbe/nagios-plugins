@@ -19,11 +19,16 @@ service nagios-nrpe-server restart
 mkdir -p /var/lib/nagios/log
 # on server:
 mkdir -p /home/nagios/log
+
+# as root
+printf "# Check for repository updates daily\n%02d %02d * * * nagios /var/lib/nagios/nagios-plugins/update/update_nagios_plugins.sh --verbose >>/var/lib/nagios/log/nagious-plugins-update.log\n" $((RANDOM % 60)) $((RANDOM % 25)) > /etc/cron.d/nagious-plugins-update
+# on server
+printf "# Check for repository updates daily\n%02d %02d * * * nagios /home/nagios/nagios-plugins/update/update_nagios_plugins.sh --verbose >>/home/nagios/nagious-plugins-update.log\n" $((RANDOM % 60)) $((RANDOM % 25)) > /etc/cron.d/nagious-plugins-update
 ```
 
 /etc/logrotate.d/nagious-plugins-update
 ```
-/home/nagios/log/nagious-plugins-update.log {
+/var/lib/nagios/log/nagious-plugins-update.log {
 	monthly
 	rotate 3
 	size 50M
