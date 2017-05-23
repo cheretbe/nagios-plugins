@@ -12,12 +12,21 @@ vi /etc/nagios/nrpe.cfg
 service nagios-nrpe-server restart
 ```
 
+#### Auto-update
+![exclamation](https://github.com/cheretbe/notes/blob/master/images/warning_16.png) On server home path is `/home/nagios`, not `/var/lib/nagios`
+```bash
+# as user nagios
+mkdir -p /var/lib/nagios/log
+# on server:
+mkdir -p /home/nagios/log
+```
+
 /etc/logrotate.d/nagious-plugins-update
 ```
 /home/nagios/log/nagious-plugins-update.log {
 	monthly
 	rotate 3
-  size 50M
+	size 50M
 	compress
 	delaycompress
 	missingok
