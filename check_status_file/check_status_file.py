@@ -3,6 +3,7 @@
 import sys
 import os
 import argparse
+import dateutil.parser
 
 # Nagios status codes
 STATUS_UNKNOWN  = -1
@@ -17,6 +18,21 @@ def check_file(status_file_name, warning_hours, critical_hours):
   if not(os.path.isfile(status_file_name)):
     print_stdout("CRITICAL: status file '{}' does not exist".format(status_file_name))
     return(STATUS_CRITICAL)
+
+  # Status data is expected as a single semicolon-delimited line in the
+  # following format:
+  # <timestamp>;<status>;<text description>
+  # Timestamp is in ISO 8601 format.
+  # Status can be one of the following values: OK, WARNING, ERROR
+  with open(status_file_name, "r") as f:
+    status_data = f.read().split(";")
+  print(status_data)
+  if len(status_data) != 3:
+    print_stdout("CRITICAL: wrong status data in'{}'".format(status_file_name))
+    return(STATUS_CRITICAL)
+
+  print(status_data)
+  return(STATUS_UNKNOWN)
 
 def main():
   exit_code = STATUS_UNKNOWN
