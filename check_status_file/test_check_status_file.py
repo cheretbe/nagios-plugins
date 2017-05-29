@@ -36,3 +36,8 @@ class check_file_UnitTests(unittest.TestCase):
     check_status_file.check_file("file_name", 10, 20)
     # open_mock.side_effect = (mock.mock_open().return_value,)
     # check_status_file.check_file("file_name", 10, 20)
+
+
+# 2Check
+# https://stackoverflow.com/questions/4199700/python-how-do-i-make-temporary-files-in-my-test-suite
+# https://docs.pytest.org/en/latest/tmpdir.html
