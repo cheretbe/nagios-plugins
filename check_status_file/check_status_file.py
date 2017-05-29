@@ -25,10 +25,9 @@ def check_file(status_file_name, warning_hours, critical_hours):
   # Timestamp is in ISO 8601 format.
   # Status can be one of the following values: OK, WARNING, ERROR
   with open(status_file_name, "r") as f:
-    status_data = f.read().split(";")
-  print(status_data)
+    status_data = f.readline().split(";")
   if len(status_data) != 3:
-    print_stdout("CRITICAL: wrong status data in'{}'".format(status_file_name))
+    print_stdout("CRITICAL: wrong status data in '{}'".format(status_file_name))
     return(STATUS_CRITICAL)
 
   print(status_data)
