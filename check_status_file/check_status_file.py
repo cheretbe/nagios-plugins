@@ -32,6 +32,8 @@ def check_file(status_file_name, warning_hours, critical_hours):
 
   print(status_data)
   return(STATUS_UNKNOWN)
+  # http://techblog.thescore.com/2015/11/03/timezones-in-python/
+  # http://pytz.sourceforge.net/#localized-times-and-date-arithmetic
 
 def main():
   exit_code = STATUS_UNKNOWN
