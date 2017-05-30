@@ -35,6 +35,14 @@ def check_file(status_file_name, warning_hours, critical_hours):
   # http://techblog.thescore.com/2015/11/03/timezones-in-python/
   # http://pytz.sourceforge.net/#localized-times-and-date-arithmetic
 
+  # import datetime
+  # import dateutil.parser
+  # import pytz
+
+  # check_date = dateutil.parser.parse("2017-05-30T11:12:05+02:00")
+  # local_date = pytz.utc.localize(datetime.datetime.utcnow())
+  # (local_date - check_date).total_seconds()
+
 def main():
   exit_code = STATUS_UNKNOWN
   try:
