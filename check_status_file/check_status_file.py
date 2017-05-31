@@ -97,12 +97,15 @@ def main():
       help='Number of hours since last change to cause critical state (default: %(default)d)')
 
     options = parser.parse_args()
+    if options.warning_hours > options.critical_hours:
+      print("Error: critical threshold cannot be less than warning")
+      return (STATUS_UNKNOWN)
+
     exit_code = check_file(options.status_file_name, options.warning_hours,
       options.critical_hours)
 
   except Exception as e:
     print("Unhandled exception: {}".format(e))
-    exit_code = STATUS_CRITICAL
 
   return (exit_code)
 
