@@ -31,9 +31,27 @@ class check_file_UnitTests(unittest.TestCase):
     self.assertEqual(check_status_file.check_file("file_name", 10, 20), 2)
     print_stdout_mock.assert_called_with("CRITICAL: wrong status data in 'file_name'")
 
-    open_mock.side_effect = [mock.mock_open(read_data="11;22;33").return_value]
-    # open_mock.side_effect = "11;22;33"
-    check_status_file.check_file("file_name", 10, 20)
+    open_mock.side_effect = [mock.mock_open(read_data="wrong_date;status;description").return_value]
+    self.assertEqual(check_status_file.check_file("file_name", 10, 20), 2)
+    print_stdout_mock.assert_called_with("Wrong date/time format in file 'file_name': wrong_date")
+
+    open_mock.side_effect = [mock.mock_open(read_data="2017-05-30T11:12:05+02:00;wrong_status;description").return_value]
+    self.assertEqual(check_status_file.check_file("file_name", 10, 20), 2)
+    print_stdout_mock.assert_called_with("Wrong status code in file 'file_name': wrong_status")
+
+    # Both upper and lowercase are fine
+    open_mock.side_effect = [mock.mock_open(read_data="2017-05-30T11:12:05+02:00;OK;description").return_value]
+    self.assertEqual(check_status_file.check_file("file_name", 10, 20), -1)
+    # print_stdout_mock.assert_called_with("Wrong status code in file 'file_name': wrong_status")
+    open_mock.side_effect = [mock.mock_open(read_data="2017-05-30T11:12:05+02:00;ok;description").return_value]
+    self.assertEqual(check_status_file.check_file("file_name", 10, 20), -1)
+
+    open_mock.side_effect = [mock.mock_open(read_data="2017-05-30T11:12:05;ok;description").return_value]
+    self.assertEqual(check_status_file.check_file("file_name", 10, 20), -1)
+
+
+
+
     # open_mock.side_effect = (mock.mock_open().return_value,)
     # check_status_file.check_file("file_name", 10, 20)
 
