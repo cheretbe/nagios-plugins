@@ -68,13 +68,33 @@ def check_file(status_file_name, warning_hours, critical_hours):
     print("timezone")
     # With timezone
     status_age = (pytz.utc.localize(datetime.datetime.utcnow()) - status_timestamp).total_seconds()
+  status_age_hours_str = "{:.1f} hour(s)".format(status_age / 3600)
 
-  print(status_age)
+  print("===>", datetime.datetime.utcnow())
+  dummy = pytz.utc.localize(datetime.datetime.utcnow()) - status_timestamp
+  print("===>", dummy)
+  print("===>", dummy.total_seconds())
+  print("===>", dummy.seconds)
+  return_value = STATUS_UNKNOWN
+
+  if status_age <= datetime.timedelta(hours=warning_hours).seconds:
+    # Last status change is under the warning threshold
+    if status_code == STATUS_OK:
+      print_stdout("OK - {} ({} ago)".format(status_data[2], status_age_hours_str))
+      return_value = STATUS_OK
+    else:
+      pass
+  elif status_age <= datetime.timedelta(hours=critical_hours).seconds:
+    pass
+  else:
+    pass
+
+  print(status_age, status_age_hours_str)
   print(status_code)
   print(status_timestamp)
   print(str(status_timestamp))
   print("We are the {:%d, %b %Y}".format(status_timestamp))
-  return(STATUS_UNKNOWN)
+  return(return_value)
   # http://techblog.thescore.com/2015/11/03/timezones-in-python/
   # http://pytz.sourceforge.net/#localized-times-and-date-arithmetic
 

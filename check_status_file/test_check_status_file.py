@@ -1,6 +1,8 @@
 import sys
 import mock
 import unittest
+import datetime
+import freezegun
 
 import check_status_file
 
@@ -24,9 +26,12 @@ class check_file_UnitTests(unittest.TestCase):
   # Mocked readline fails on empty file (https://github.com/testing-cabal/mock/issues/382)
   # Because of that we test empty file condition only in functional test
   @mock.patch(BUILTIN_OPEN_NAME, new_callable=mock.mock_open, read_data="wrong_data")
+  # @mock.patch("datetime.datetime.utcnow")
+  @freezegun.freeze_time("2012-01-14 03:21:34", tz_offset=-4)
   def test_file_exists_wrong_data(self, open_mock, print_stdout_mock, os_path_isfile_mock):
     """Should return critical status if status file doesn't contain valid data"""
     os_path_isfile_mock.return_value = True
+    # utcnow_mock.return_value = datetime.datetime(year=2017, month=5, day=31, hour=12, minute=10)
 
     self.assertEqual(check_status_file.check_file("file_name", 10, 20), 2)
     print_stdout_mock.assert_called_with("CRITICAL: wrong status data in 'file_name'")
@@ -39,15 +44,20 @@ class check_file_UnitTests(unittest.TestCase):
     self.assertEqual(check_status_file.check_file("file_name", 10, 20), 2)
     print_stdout_mock.assert_called_with("Wrong status code in file 'file_name': wrong_status")
 
-    # Both upper and lowercase are fine
+    freezegun.freeze_time("2014-01-14 12:00:01")
+    # Both upper and lowercase codes are fine
     open_mock.side_effect = [mock.mock_open(read_data="2017-05-30T11:12:05+02:00;OK;description").return_value]
-    self.assertEqual(check_status_file.check_file("file_name", 10, 20), -1)
-    # print_stdout_mock.assert_called_with("Wrong status code in file 'file_name': wrong_status")
-    open_mock.side_effect = [mock.mock_open(read_data="2017-05-30T11:12:05+02:00;ok;description").return_value]
-    self.assertEqual(check_status_file.check_file("file_name", 10, 20), -1)
+    self.assertEqual(check_status_file.check_file("file_name", 10, 20), 0)
 
-    open_mock.side_effect = [mock.mock_open(read_data="2017-05-30T11:12:05;ok;description").return_value]
-    self.assertEqual(check_status_file.check_file("file_name", 10, 20), -1)
+
+    open_mock.side_effect = [mock.mock_open(read_data="2017-05-30T11:12:05+02:00;ok;description").return_value]
+    self.assertEqual(check_status_file.check_file("file_name", 10, 20), 0)
+
+
+
+    #TODO: remove
+    # open_mock.side_effect = [mock.mock_open(read_data="2017-05-30T11:12:05;ok;description").return_value]
+    # self.assertEqual(check_status_file.check_file("file_name", 10, 20), -1)
 
 
 
