@@ -24,6 +24,26 @@ STATUS_CODES = {
 def print_stdout(string_to_print):
   print(string_to_print)
 
+def get_timedelta_from_now(other_timestamp):
+  print("==>", datetime.datetime.now(), datetime.datetime.utcnow())
+  # If other timestamp is naive, we assume that it is in the same timezone as
+  # local system. If it contains timezone information, we convert local time to UTC
+  # with tzinfo to calculate the difference
+  # 
+  # http://techblog.thescore.com/2015/11/03/timezones-in-python/
+  # http://pytz.sourceforge.net/#localized-times-and-date-arithmetic
+  # https://stackoverflow.com/questions/5802108/how-to-check-if-a-datetime-object-is-localized-with-pytz
+  if (other_timestamp.tzinfo is None) or (other_timestamp.tzinfo.utcoffset(other_timestamp) is None):
+    print("naive")
+    # Naive
+    return((datetime.datetime.now() - other_timestamp).total_seconds())
+  else:
+    print("timezone")
+    # With timezone
+    return((pytz.utc.localize(datetime.datetime.utcnow()) - other_timestamp).total_seconds())
+
+
+
 def check_file(status_file_name, warning_hours, critical_hours):
   if not(os.path.isfile(status_file_name)):
     print_stdout("CRITICAL: status file '{}' does not exist".format(status_file_name))
@@ -53,21 +73,7 @@ def check_file(status_file_name, warning_hours, critical_hours):
     print_stdout("Wrong status code in file '{}': {}".format(status_file_name, status_data[1]))
     return(STATUS_CRITICAL)
 
-  # Check if status timestamp is naive, we assume that it is in the same timezone as
-  # local system. If it contains timezone information, we convert local time to UTC
-  # with tzinfo to calculate the difference
-  # 
-  # http://techblog.thescore.com/2015/11/03/timezones-in-python/
-  # http://pytz.sourceforge.net/#localized-times-and-date-arithmetic
-  # https://stackoverflow.com/questions/5802108/how-to-check-if-a-datetime-object-is-localized-with-pytz
-  if (status_timestamp.tzinfo is None) or (status_timestamp.tzinfo.utcoffset(status_timestamp) is None):
-    print("naive")
-    # Naive
-    status_age = (datetime.datetime.now() - status_timestamp).total_seconds()
-  else:
-    print("timezone")
-    # With timezone
-    status_age = (pytz.utc.localize(datetime.datetime.utcnow()) - status_timestamp).total_seconds()
+  status_age = get_timedelta_from_now(status_timestamp)
   status_age_hours_str = "{:.1f} hour(s)".format(status_age / 3600)
 
   print("===>", datetime.datetime.utcnow())
