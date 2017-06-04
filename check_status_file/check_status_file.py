@@ -13,7 +13,7 @@ STATUS_OK       =  0
 STATUS_WARNING  =  1
 STATUS_CRITICAL =  2
 
-# String representations of valid valid status codes
+# String representations of valid status codes
 STATUS_CODES = {
   "OK":       STATUS_OK,
   "WARNING":  STATUS_WARNING,
@@ -25,7 +25,7 @@ def print_stdout(string_to_print):
   print(string_to_print)
 
 def get_timedelta_from_now(other_timestamp):
-  print("==>", datetime.datetime.now(), datetime.datetime.utcnow())
+  print("\n==>", datetime.datetime.now(), datetime.datetime.utcnow(), other_timestamp)
   # If other timestamp is naive, we assume that it is in the same timezone as
   # local system. If it contains timezone information, we convert local time to UTC
   # with tzinfo to calculate the difference

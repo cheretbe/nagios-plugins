@@ -3,7 +3,7 @@ import mock
 import unittest
 import datetime
 import freezegun
-import pytest
+import dateutil.tz
 
 import check_status_file
 
@@ -13,31 +13,40 @@ else:
   BUILTIN_OPEN_NAME = "__builtin__.open"
 
 class get_timedelta_from_now_UnitTests(unittest.TestCase):
-  """Unit tests for 'get_timedelta_from_now' function"""
+    """Unit tests for 'get_timedelta_from_now' function"""
 
-  # freeze_time sets UTC time
-  # Here local time is 16:21, UTC time is 18:21
-  @freezegun.freeze_time("2017-01-14 18:21:34", tz_offset=-2)
-  def test_timestamp_is_naive(self):
-    """Should compare dates correctly when timestamp doesn't contain timezone information"""
+    # freeze_time sets UTC time
+    # Here local time is 16:21, UTC time is 18:21
+    @freezegun.freeze_time("2017-01-14 18:21:34", tz_offset=-2)
+    def test_timestamp_is_naive(self):
+        """Should compare dates correctly when timestamp doesn't contain timezone information"""
 
-    ret_val = check_status_file.get_timedelta_from_now(datetime.datetime(
-      year=2017, month=1, day=14, hour=16, minute=21, second=34))
-    self.assertEqual(ret_val, 0)
+        ret_val = check_status_file.get_timedelta_from_now(datetime.datetime(
+            year=2017, month=1, day=14, hour=16, minute=21, second=34))
+        self.assertEqual(ret_val, 0)
 
-    # 4*3600 + 21*60 + 24 = 15684
-    ret_val = check_status_file.get_timedelta_from_now(datetime.datetime(
-      year=2017, month=1, day=14, hour=12, minute=0, second=10))
-    self.assertEqual(ret_val, 15684)
+        # 4*3600 + 21*60 + 24 = 15684
+        ret_val = check_status_file.get_timedelta_from_now(datetime.datetime(
+            year=2017, month=1, day=14, hour=12, minute=0, second=10))
+        self.assertEqual(ret_val, 15684)
 
-  # freeze_time sets UTC time
-  # Here local time is 2017-01-01 02:15:11, UTC time is 2016-12-31 22:15:11
-  @freezegun.freeze_time("2016-12-31 22:15:11", tz_offset=+4)
-  def test_timestamp_with_timezone(self):
-    """Should compare dates correctly when timestamp contains timezone information"""
+    # freeze_time sets UTC time
+    # Here local time is 2017-01-01 02:15:11, UTC time is 2016-12-31 22:15:11
+    @freezegun.freeze_time("2016-12-31 22:15:11", tz_offset=+4)
+    def test_timestamp_with_timezone(self):
+        """Should compare dates correctly when timestamp contains timezone information"""
 
-    check_status_file.get_timedelta_from_now(datetime.datetime(
-      year=2017, month=1, day=14, hour=12, minute=0, second=10))
+        # 2017-01-01T02:15:11+04:00
+        ret_val = check_status_file.get_timedelta_from_now(datetime.datetime(
+            year=2017, month=1, day=1, hour=2, minute=15, second=11,
+            tzinfo=dateutil.tz.tzoffset('', +14400)))
+        self.assertEqual(ret_val, 0)
+
+        # 2016-12-31T02:25:11+00:00
+        ret_val = check_status_file.get_timedelta_from_now(datetime.datetime(
+            year=2016, month=12, day=31, hour=22, minute=15, second=11,
+            tzinfo=dateutil.tz.tzoffset('UTC', 0)))
+        self.assertEqual(ret_val, 0)
 
 
 @mock.patch("os.path.isfile")
