@@ -70,13 +70,8 @@ def check_file(status_file_name, warning_hours, critical_hours):
         return(STATUS_CRITICAL)
 
     status_age = get_timedelta_from_now(status_timestamp)
-    status_age_hours_str = "{:.1f} hour(s)".format(status_age / 3600)
+    status_age_hours_str = "{:.2f} hour(s)".format(status_age / 3600)
 
-    print("===>", datetime.datetime.utcnow())
-    dummy = pytz.utc.localize(datetime.datetime.utcnow()) - status_timestamp
-    print("===>", dummy)
-    print("===>", dummy.total_seconds())
-    print("===>", dummy.seconds)
     return_value = STATUS_UNKNOWN
 
     if status_age <= datetime.timedelta(hours=warning_hours).seconds:
