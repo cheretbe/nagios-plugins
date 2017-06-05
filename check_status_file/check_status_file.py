@@ -25,7 +25,6 @@ def print_stdout(string_to_print):
     print(string_to_print)
 
 def get_timedelta_from_now(other_timestamp):
-    print("\n==>", datetime.datetime.now(), datetime.datetime.utcnow(), other_timestamp)
     # If other timestamp is naive, we assume that it is in the same timezone as
     # local system. If it contains timezone information, we convert local time to UTC
     # with tzinfo to calculate the difference
@@ -34,11 +33,9 @@ def get_timedelta_from_now(other_timestamp):
     # http://pytz.sourceforge.net/#localized-times-and-date-arithmetic
     # https://stackoverflow.com/questions/5802108/how-to-check-if-a-datetime-object-is-localized-with-pytz
     if (other_timestamp.tzinfo is None) or (other_timestamp.tzinfo.utcoffset(other_timestamp) is None):
-        print("naive")
         # Naive
         return((datetime.datetime.now() - other_timestamp).total_seconds())
     else:
-        print("timezone")
         # With timezone
         return((pytz.utc.localize(datetime.datetime.utcnow()) - other_timestamp).total_seconds())
 

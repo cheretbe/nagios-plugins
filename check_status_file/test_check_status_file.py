@@ -36,17 +36,24 @@ class get_timedelta_from_now_UnitTests(unittest.TestCase):
     def test_timestamp_with_timezone(self):
         """Should compare dates correctly when timestamp contains timezone information"""
 
-        # 2017-01-01T02:15:11+04:00
+        # their time: 2017-01-01T02:15:11+04:00 (same as local)
         ret_val = check_status_file.get_timedelta_from_now(datetime.datetime(
             year=2017, month=1, day=1, hour=2, minute=15, second=11,
-            tzinfo=dateutil.tz.tzoffset('', +14400)))
+            tzinfo=dateutil.tz.tzoffset(None, +14400)))
         self.assertEqual(ret_val, 0)
 
-        # 2016-12-31T02:25:11+00:00
+        # their time: 2016-12-31T22:15:11+00:00 (same as UTC local)
         ret_val = check_status_file.get_timedelta_from_now(datetime.datetime(
             year=2016, month=12, day=31, hour=22, minute=15, second=11,
             tzinfo=dateutil.tz.tzoffset('UTC', 0)))
         self.assertEqual(ret_val, 0)
+
+        # their time: 2016-12-31T21:25:30+00:30 (2016-12-31T20:55:30 UTC, 2017-01-01T00:55:30 local)
+        # 1*3600 + 19*60 + 41 = 4781
+        ret_val = check_status_file.get_timedelta_from_now(datetime.datetime(
+            year=2016, month=12, day=31, hour=21, minute=25, second=30,
+            tzinfo=dateutil.tz.tzoffset(None, +1800)))
+        self.assertEqual(ret_val, 4781)
 
 
 @mock.patch("os.path.isfile")
