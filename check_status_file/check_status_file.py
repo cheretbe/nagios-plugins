@@ -77,31 +77,35 @@ def check_file(status_file_name, warning_hours, critical_hours):
     if status_age <= datetime.timedelta(hours=warning_hours).seconds:
         # Last status change is under the warning threshold
         if status_code == STATUS_OK:
-            print_stdout("OK - {} ({} ago)".format(status_data[2], status_age_hours_str))
+            print_stdout("OK - {} [{}, {} ago]".format(status_data[2],
+                status_data[0], status_age_hours_str))
             return_value = STATUS_OK
+        elif status_code == STATUS_WARNING:
+            print_stdout("WARNING - {} [{}, {} ago]".format(status_data[2],
+                status_data[0], status_age_hours_str))
+            return_value = STATUS_WARNING
         else:
-            pass
+            print_stdout("CRITICAL - {} [{}, {} ago]".format(status_data[2],
+                status_data[0], status_age_hours_str))
+            return_value = STATUS_CRITICAL
     elif status_age <= datetime.timedelta(hours=critical_hours).seconds:
-        pass
+        # Last status change is over the warning threshold, but not over the critical
+        if status_code == STATUS_OK:
+            print_stdout("WARNING - {} since last status update is over the limit of {} hour(s) [{} - {}]".format(
+                status_age_hours_str, warning_hours, status_data[0], status_data[2]))
+            return_value = STATUS_WARNING
+        elif status_code == STATUS_WARNING:
+            print_stdout("WARNING - {} since last status update is over the limit of {} hour(s) [{} - {}]".format(
+                status_age_hours_str, warning_hours, status_data[0], status_data[2]))
+            return_value = STATUS_WARNING
+        else:
+            print_stdout("WARNING+CRITICAL - {} since last status update is over the limit of {} hour(s) [{} - {}]".format(
+                status_age_hours_str, warning_hours, status_data[0], status_data[2]))
+            return_value = STATUS_CRITICAL
     else:
         pass
 
-    print(status_age, status_age_hours_str)
-    print(status_code)
-    print(status_timestamp)
-    print(str(status_timestamp))
-    print("We are the {:%d, %b %Y}".format(status_timestamp))
     return(return_value)
-    # http://techblog.thescore.com/2015/11/03/timezones-in-python/
-    # http://pytz.sourceforge.net/#localized-times-and-date-arithmetic
-
-    # import datetime
-    # import dateutil.parser
-    # import pytz
-
-    # check_date = dateutil.parser.parse("2017-05-30T11:12:05+02:00")
-    # local_date = pytz.utc.localize(datetime.datetime.utcnow())
-    # (local_date - check_date).total_seconds()
 
 def main():
     exit_code = STATUS_UNKNOWN
