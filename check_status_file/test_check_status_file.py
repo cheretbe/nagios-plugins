@@ -106,41 +106,68 @@ class check_file_UnitTests(unittest.TestCase):
         os_path_isfile_mock.return_value = True
         get_timedelta_from_now_mock.return_value = 7200 # 2 hours
 
-        # Status OK, age 2h (< warning(5h) < error(10h)), result code is OK
+        # Status OK, age 2h (< warning(5h) < critical(10h)), result code is OK
         self.assertEqual(check_status_file.check_file("file_name", 5, 10), 0)
         print_stdout_mock.assert_called_with("OK - description [timestamp, 2.00 hour(s) ago]")
 
-        # Status WARNING, age 2h (< warning(5h) < error(10h)), result code is WARNING
+        # Status WARNING, age 2h (< warning(5h) < critical(10h)), result code is WARNING
         open_mock.side_effect = [mock.mock_open(read_data="timestamp;WARNING;description").return_value]
         self.assertEqual(check_status_file.check_file("file_name", 10, 20), 1)
         print_stdout_mock.assert_called_with("WARNING - description [timestamp, 2.00 hour(s) ago]")
 
-        # Status ERROR, age 2h (< warning(5h) < error(10h)), result code is CRITICAL
+        # Status ERROR, age 2h (< warning(5h) < critical(10h)), result code is CRITICAL
         open_mock.side_effect = [mock.mock_open(read_data="timestamp;ERROR;description").return_value]
         self.assertEqual(check_status_file.check_file("file_name", 10, 20), 2)
         print_stdout_mock.assert_called_with("CRITICAL - description [timestamp, 2.00 hour(s) ago]")
 
-        # Status CRITICAL, age 2h (< warning(5h) < error(10h)), result code is CRITICAL
+        # Status CRITICAL, age 2h (< warning(5h) < critical(10h)), result code is CRITICAL
         open_mock.side_effect = [mock.mock_open(read_data="timestamp;CRITICAL;description").return_value]
         self.assertEqual(check_status_file.check_file("file_name", 10, 20), 2)
         print_stdout_mock.assert_called_with("CRITICAL - description [timestamp, 2.00 hour(s) ago]")
 
         get_timedelta_from_now_mock.return_value = 10800 # 3 hours
 
-        # Status OK, age 3h (over warning threshold(2h) < error(10h)), result code is WARNING
+        # Status OK, age 3h (over warning threshold(2h) < critical(10h)), result code is WARNING
         open_mock.side_effect = [mock.mock_open(read_data="timestamp;OK;description").return_value]
         self.assertEqual(check_status_file.check_file("file_name", 2, 10), 1)
         print_stdout_mock.assert_called_with("WARNING - 3.00 hour(s) since last status update is over the limit of 2 hour(s) [timestamp - description]")
 
-        # Status WARNING, age 3h (over warning threshold(2h) < error(10h)), result code is WARNING
+        # Status WARNING, age 3h (over warning threshold(2h) < critical(10h)), result code is WARNING
         open_mock.side_effect = [mock.mock_open(read_data="timestamp;WARNING;description").return_value]
         self.assertEqual(check_status_file.check_file("file_name", 2, 10), 1)
         print_stdout_mock.assert_called_with("WARNING - 3.00 hour(s) since last status update is over the limit of 2 hour(s) [timestamp - description]")
 
-        # Status ERROR, age 3h (over warning threshold(2h) < error(10h)), result code is CRITICAL
+        # Status ERROR, age 3h (over warning threshold(2h) < critical(10h)), result code is CRITICAL
         open_mock.side_effect = [mock.mock_open(read_data="timestamp;ERROR;description").return_value]
         self.assertEqual(check_status_file.check_file("file_name", 2, 10), 2)
         print_stdout_mock.assert_called_with("WARNING+CRITICAL - 3.00 hour(s) since last status update is over the limit of 2 hour(s) [timestamp - description]")
+
+        # Status CRITICAL, age 3h (over warning threshold(2h) < critical(10h)), result code is CRITICAL
+        open_mock.side_effect = [mock.mock_open(read_data="timestamp;CRITICAL;description").return_value]
+        self.assertEqual(check_status_file.check_file("file_name", 2, 10), 2)
+        print_stdout_mock.assert_called_with("WARNING+CRITICAL - 3.00 hour(s) since last status update is over the limit of 2 hour(s) [timestamp - description]")
+
+        get_timedelta_from_now_mock.return_value = 18000 # 5 hours
+
+        # Status OK, age 5h (over critical threshold(4h)), result code is CRITICAL
+        open_mock.side_effect = [mock.mock_open(read_data="timestamp;OK;description").return_value]
+        self.assertEqual(check_status_file.check_file("file_name", 3, 4), 2)
+        print_stdout_mock.assert_called_with("CRITICAL - 5.00 hour(s) since last status update is over the limit of 4 hour(s) [timestamp - description]")
+
+        # Status WARNING, age 5h (over critical threshold(4h)), result code is CRITICAL
+        open_mock.side_effect = [mock.mock_open(read_data="timestamp;WARNING;description").return_value]
+        self.assertEqual(check_status_file.check_file("file_name", 3, 4), 2)
+        print_stdout_mock.assert_called_with("CRITICAL - 5.00 hour(s) since last status update is over the limit of 4 hour(s) [timestamp - description]")
+
+        # Status ERROR, age 5h (over critical threshold(4h)), result code is CRITICAL
+        open_mock.side_effect = [mock.mock_open(read_data="timestamp;ERROR;description").return_value]
+        self.assertEqual(check_status_file.check_file("file_name", 3, 4), 2)
+        print_stdout_mock.assert_called_with("CRITICAL - 5.00 hour(s) since last status update is over the limit of 4 hour(s) [timestamp - description]")
+
+        # Status CRITICAL, age 5h (over critical threshold(4h)), result code is CRITICAL
+        open_mock.side_effect = [mock.mock_open(read_data="timestamp;CRITICAL;description").return_value]
+        self.assertEqual(check_status_file.check_file("file_name", 3, 4), 2)
+        print_stdout_mock.assert_called_with("CRITICAL - 5.00 hour(s) since last status update is over the limit of 4 hour(s) [timestamp - description]")
 
 
 # 2Check
