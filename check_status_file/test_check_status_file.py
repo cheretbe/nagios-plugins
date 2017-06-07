@@ -1,9 +1,12 @@
 import sys
+import os
 import mock
 import unittest
 import datetime
 import freezegun
 import dateutil.tz
+import tempfile
+import shutil
 
 import check_status_file
 
@@ -169,7 +172,44 @@ class check_file_UnitTests(unittest.TestCase):
         self.assertEqual(check_status_file.check_file("file_name", 3, 4), 2)
         print_stdout_mock.assert_called_with("CRITICAL - 5.00 hour(s) since last status update is over the limit of 4 hour(s) [timestamp - description]")
 
+class check_file_FunctionalTests(unittest.TestCase):
+    """Functional tests for 'check_file' function"""
 
-# 2Check
-# https://stackoverflow.com/questions/4199700/python-how-do-i-make-temporary-files-in-my-test-suite
-# https://docs.pytest.org/en/latest/tmpdir.html
+    def setUp(self):
+        # Create a temporary directory
+        self.test_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        # Remove temp directory after the test
+        shutil.rmtree(self.test_dir)
+
+    def create_test_status_file(self, file_contents=()):
+        with tempfile.NamedTemporaryFile(mode="w", dir=self.test_dir, delete=False) as f:
+            test_file_full_path = f.name
+            for f_line in file_contents:
+                f.write(f_line)
+        return(test_file_full_path)
+
+    @mock.patch("check_status_file.print_stdout")
+    def test_file_doesnt_exist(self, print_stdout_mock):
+        """Should return critical status if status file doesn't exist"""
+        ret_val = check_status_file.check_file("does-not-exist", 10, 20)
+        self.assertEqual(ret_val, 2)
+        print_stdout_mock.assert_called_with("CRITICAL: status file 'does-not-exist' does not exist")
+
+    def test_file_exists_wrong_data(self):
+        """Should return critical status if status file doesn't contain valid data"""
+
+        # Empty file
+        ret_val = check_status_file.check_file(self.create_test_status_file(), 10, 20)
+        self.assertEqual(ret_val, 2)
+
+        # Incorrect timestamp
+        ret_val = check_status_file.check_file(
+            self.create_test_status_file("wrong_date;status;description"), 10, 20)
+        self.assertEqual(ret_val, 2)
+
+        # Incorrect status code
+        ret_val = check_status_file.check_file(
+            self.create_test_status_file("2017-05-30T11:12:05+02:00;wrong_status;description"), 10, 20)
+        self.assertEqual(ret_val, 2)
