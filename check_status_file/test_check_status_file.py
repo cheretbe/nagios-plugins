@@ -3,10 +3,14 @@ import os
 import mock
 import unittest
 import datetime
+import time
 import freezegun
 import dateutil.tz
 import tempfile
 import shutil
+
+# [!] Remove after debug
+import pytz
 
 import check_status_file
 
@@ -84,15 +88,15 @@ class check_file_UnitTests(unittest.TestCase):
         get_timedelta_from_now_mock.return_value = 3600 # 1 hour
 
         self.assertEqual(check_status_file.check_file("file_name", 10, 20), 2)
-        print_stdout_mock.assert_called_with("CRITICAL: wrong status data in 'file_name'")
+        print_stdout_mock.assert_called_with("CRITICAL: Wrong status data in 'file_name'")
 
         open_mock.side_effect = [mock.mock_open(read_data="wrong_date;status;description").return_value]
         self.assertEqual(check_status_file.check_file("file_name", 10, 20), 2)
-        print_stdout_mock.assert_called_with("Wrong date/time format in file 'file_name': wrong_date")
+        print_stdout_mock.assert_called_with("CRITICAL: Wrong date/time format in file 'file_name': wrong_date")
 
         open_mock.side_effect = [mock.mock_open(read_data="2017-05-30T11:12:05+02:00;wrong_status;description").return_value]
         self.assertEqual(check_status_file.check_file("file_name", 10, 20), 2)
-        print_stdout_mock.assert_called_with("Wrong status code in file 'file_name': wrong_status")
+        print_stdout_mock.assert_called_with("CRITICAL: Wrong status code in file 'file_name': wrong_status")
 
         # Both upper and lowercase codes are fine
         open_mock.side_effect = [mock.mock_open(read_data="2017-05-30T11:12:05+02:00;OK;description").return_value]
@@ -104,7 +108,7 @@ class check_file_UnitTests(unittest.TestCase):
     @mock.patch('dateutil.parser.parse')
     def test_file_exists_correct_data(self, parse_mock, open_mock, get_timedelta_from_now_mock,
             print_stdout_mock, os_path_isfile_mock):
-        """Should return critical status if status file doesn't contain valid data"""
+        """Should return status depending on file contents"""
 
         os_path_isfile_mock.return_value = True
         get_timedelta_from_now_mock.return_value = 7200 # 2 hours
@@ -190,6 +194,19 @@ class check_file_FunctionalTests(unittest.TestCase):
                 f.write(f_line)
         return(test_file_full_path)
 
+    def timestamp_as_iso_8601(self, hours_offset=0, tz_seconds_offset=None):
+        """Current timestamp converted to a given timezone with optional offset"""
+
+        # if specific timezone offset was not specified, use local timezone
+        if tz_seconds_offset is None:
+            tz_seconds_offset = -time.altzone
+        # Strip microseconds to emulate Linux 'date -Iseconds' behavior
+        timestamp = datetime.datetime.now(dateutil.tz.tzoffset(None, tz_seconds_offset)).replace(microsecond=0)
+        # Offset resulting timestamp if needed
+        if hours_offset != 0:
+            timestamp = timestamp + datetime.timedelta(hours=hours_offset)
+        return(timestamp.isoformat())
+
     @mock.patch("check_status_file.print_stdout")
     def test_file_doesnt_exist(self, print_stdout_mock):
         """Should return critical status if status file doesn't exist"""
@@ -213,3 +230,11 @@ class check_file_FunctionalTests(unittest.TestCase):
         ret_val = check_status_file.check_file(
             self.create_test_status_file("2017-05-30T11:12:05+02:00;wrong_status;description"), 10, 20)
         self.assertEqual(ret_val, 2)
+
+        # No error on correct data
+        ret_val = check_status_file.check_file(
+            self.create_test_status_file(self.timestamp_as_iso_8601(hours_offset=-2) + ";OK;description"), 10, 20)
+        self.assertEqual(ret_val, 0)
+
+    # def test_file_exists_correct_data(self):
+    #     """Should return status depending on file contents"""
