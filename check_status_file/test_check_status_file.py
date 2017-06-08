@@ -75,7 +75,7 @@ class check_file_UnitTests(unittest.TestCase):
         os_path_isfile_mock.return_value = False
         ret_val = check_status_file.check_file("file_name", 10, 20)
         self.assertEqual(ret_val, 2)
-        print_stdout_mock.assert_called_with("CRITICAL: status file 'file_name' does not exist")
+        print_stdout_mock.assert_called_with("CRITICAL - status file 'file_name' does not exist")
 
     # Mocked readline fails on empty file (https://github.com/testing-cabal/mock/issues/382)
     # Because of that we test empty file condition only in functional test
@@ -88,15 +88,15 @@ class check_file_UnitTests(unittest.TestCase):
         get_timedelta_from_now_mock.return_value = 3600 # 1 hour
 
         self.assertEqual(check_status_file.check_file("file_name", 10, 20), 2)
-        print_stdout_mock.assert_called_with("CRITICAL: Wrong status data in 'file_name'")
+        print_stdout_mock.assert_called_with("CRITICAL - Wrong status data in 'file_name'")
 
         open_mock.side_effect = [mock.mock_open(read_data="wrong_date;status;description").return_value]
         self.assertEqual(check_status_file.check_file("file_name", 10, 20), 2)
-        print_stdout_mock.assert_called_with("CRITICAL: Wrong date/time format in file 'file_name': wrong_date")
+        print_stdout_mock.assert_called_with("CRITICAL - Wrong date/time format in file 'file_name': wrong_date")
 
         open_mock.side_effect = [mock.mock_open(read_data="2017-05-30T11:12:05+02:00;wrong_status;description").return_value]
         self.assertEqual(check_status_file.check_file("file_name", 10, 20), 2)
-        print_stdout_mock.assert_called_with("CRITICAL: Wrong status code in file 'file_name': wrong_status")
+        print_stdout_mock.assert_called_with("CRITICAL - Wrong status code in file 'file_name': wrong_status")
 
         # Both upper and lowercase codes are fine
         open_mock.side_effect = [mock.mock_open(read_data="2017-05-30T11:12:05+02:00;OK;description").return_value]
@@ -212,7 +212,7 @@ class check_file_FunctionalTests(unittest.TestCase):
         """Should return critical status if status file doesn't exist"""
         ret_val = check_status_file.check_file("does-not-exist", 10, 20)
         self.assertEqual(ret_val, 2)
-        print_stdout_mock.assert_called_with("CRITICAL: status file 'does-not-exist' does not exist")
+        print_stdout_mock.assert_called_with("CRITICAL - status file 'does-not-exist' does not exist")
 
     def test_file_exists_wrong_data(self):
         """Should return critical status if status file doesn't contain valid data"""

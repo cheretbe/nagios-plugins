@@ -42,7 +42,7 @@ def get_timedelta_from_now(other_timestamp):
 
 def check_file(status_file_name, warning_hours, critical_hours):
     if not(os.path.isfile(status_file_name)):
-        print_stdout("CRITICAL: status file '{}' does not exist".format(status_file_name))
+        print_stdout("CRITICAL - status file '{}' does not exist".format(status_file_name))
         return(STATUS_CRITICAL)
 
     # Status data is expected as a single semicolon-delimited line in the
@@ -54,19 +54,19 @@ def check_file(status_file_name, warning_hours, critical_hours):
         status_data = f.readline().split(";")
 
     if len(status_data) != 3:
-        print_stdout("CRITICAL: wrong status data in '{}'".format(status_file_name))
+        print_stdout("CRITICAL - Wrong status data in '{}'".format(status_file_name))
         return(STATUS_CRITICAL)
 
     try:
         status_timestamp = dateutil.parser.parse(status_data[0])
     except ValueError as e:
-        print_stdout("Wrong date/time format in file '{}': {}".format(status_file_name, status_data[0]))
+        print_stdout("CRITICAL - Wrong date/time format in file '{}': {}".format(status_file_name, status_data[0]))
         return(STATUS_CRITICAL)
 
     try:
         status_code = STATUS_CODES[status_data[1].upper()]
     except KeyError as e:
-        print_stdout("Wrong status code in file '{}': {}".format(status_file_name, status_data[1]))
+        print_stdout("CRITICAL - Wrong status code in file '{}': {}".format(status_file_name, status_data[1]))
         return(STATUS_CRITICAL)
 
     status_age = get_timedelta_from_now(status_timestamp)
