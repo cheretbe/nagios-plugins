@@ -100,11 +100,12 @@ def check_file(status_file_name, warning_hours, critical_hours):
                 status_age_hours_str, warning_hours, status_data[0], status_data[2]))
             return_value = STATUS_WARNING
         else:
-            print_stdout("WARNING+CRITICAL - {} since last status update is over the limit of {} hour(s) [{} - {}]".format(
-                status_age_hours_str, warning_hours, status_data[0], status_data[2]))
+            print_stdout("CRITICAL - {} [WARNING - {} since last status update is over the limit of {} hour(s), {}]".format(
+                status_data[2], status_age_hours_str, warning_hours, status_data[0]))
             return_value = STATUS_CRITICAL
     else:
         # Last status change is over the critical threshold
+        # TODO: include last status code in square brackets
         print_stdout("CRITICAL - {} since last status update is over the limit of {} hour(s) [{} - {}]".format(
             status_age_hours_str, critical_hours, status_data[0], status_data[2]))
         return_value = STATUS_CRITICAL
