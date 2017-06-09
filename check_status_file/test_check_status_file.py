@@ -173,6 +173,22 @@ class check_file_UnitTests(unittest.TestCase):
         self.assertEqual(check_status_file.check_file("file_name", 3, 4), 2)
         print_stdout_mock.assert_called_with("CRITICAL - 5.00 hour(s) since last status update is over the limit of 4 hour(s) [timestamp - description]")
 
+        get_timedelta_from_now_mock.return_value = 7200 # 2 hours
+
+        # Handles newline characters correctly (reads only the first line)
+        open_mock.side_effect = [mock.mock_open(read_data="timestamp;OK;test1-line1\n").return_value]
+        self.assertEqual(check_status_file.check_file("file_name", 3, 4), 0)
+        print_stdout_mock.assert_called_with("OK - test1-line1 [timestamp, 2.00 hour(s) ago]")
+
+        open_mock.side_effect = [mock.mock_open(read_data="timestamp;OK;test2-line1\nline2\nline3").return_value]
+        self.assertEqual(check_status_file.check_file("file_name", 3, 4), 0)
+        print_stdout_mock.assert_called_with("OK - test2-line1 [timestamp, 2.00 hour(s) ago]")
+
+        open_mock.side_effect = [mock.mock_open(read_data="timestamp;OK;test3-trailing-space \nline2").return_value]
+        self.assertEqual(check_status_file.check_file("file_name", 3, 4), 0)
+        print_stdout_mock.assert_called_with("OK - test3-trailing-space  [timestamp, 2.00 hour(s) ago]")
+
+
 class check_file_FunctionalTests(unittest.TestCase):
     """Functional tests for 'check_file' function"""
 
@@ -188,7 +204,8 @@ class check_file_FunctionalTests(unittest.TestCase):
         with tempfile.NamedTemporaryFile(mode="w", dir=self.test_dir, delete=False) as f:
             test_file_full_path = f.name
             for f_line in file_contents:
-                f.write(f_line)
+                # Python automatically translates \n into \r\n on Windows
+                f.write(f_line + "\n")
         return(test_file_full_path)
 
     def timestamp_as_iso_8601(self, hours_offset=0, tz_seconds_offset=None):
@@ -231,7 +248,7 @@ class check_file_FunctionalTests(unittest.TestCase):
 
         # No error on correct data
         ret_val = check_status_file.check_file(
-            self.create_test_status_file(self.timestamp_as_iso_8601(hours_offset=-2) + ";OK;description"), 10, 20)
+            self.create_test_status_file([self.timestamp_as_iso_8601(hours_offset=-2) + ";OK;description"]), 10, 20)
         self.assertEqual(ret_val, 0)
 
     @mock.patch("check_status_file.print_stdout")
@@ -240,65 +257,80 @@ class check_file_FunctionalTests(unittest.TestCase):
 
         # Status OK, age 2h (< warning(3h) < critical(5h)), result code is OK
         ret_val = check_status_file.check_file(
-            self.create_test_status_file(self.timestamp_as_iso_8601(hours_offset=-2) + ";OK;description"), 3, 5)
+            self.create_test_status_file([self.timestamp_as_iso_8601(hours_offset=-2) + ";OK;description"]), 3, 5)
         self.assertEqual(ret_val, 0)
 
         # Status OK, age 4h (over warning threshold(3h) < critical(5h)), result code is WARNING
         ret_val = check_status_file.check_file(
-            self.create_test_status_file(self.timestamp_as_iso_8601(hours_offset=-4) + ";OK;description"), 3, 5)
+            self.create_test_status_file([self.timestamp_as_iso_8601(hours_offset=-4) + ";OK;description"]), 3, 5)
         self.assertEqual(ret_val, 1)
 
         # Status OK, age 6h (over critical threshold(5h)), result code is CRITICAL
         ret_val = check_status_file.check_file(
-            self.create_test_status_file(self.timestamp_as_iso_8601(hours_offset=-6) + ";OK;description"), 3, 5)
+            self.create_test_status_file([self.timestamp_as_iso_8601(hours_offset=-6) + ";OK;description"]), 3, 5)
         self.assertEqual(ret_val, 2)
 
         # Status WARNING, age 2h (< warning(3h) < critical(5h)), result code is WARNING
         ret_val = check_status_file.check_file(
-            self.create_test_status_file(self.timestamp_as_iso_8601(hours_offset=-2) + ";WARNING;description"), 3, 5)
+            self.create_test_status_file([self.timestamp_as_iso_8601(hours_offset=-2) + ";WARNING;description"]), 3, 5)
         self.assertEqual(ret_val, 1)
 
         # Status WARNING, age 4h (over warning threshold(3h) < critical(5h)), result code is WARNING
         ret_val = check_status_file.check_file(
-            self.create_test_status_file(self.timestamp_as_iso_8601(hours_offset=-4) + ";WARNING;description"), 3, 5)
+            self.create_test_status_file([self.timestamp_as_iso_8601(hours_offset=-4) + ";WARNING;description"]), 3, 5)
         self.assertEqual(ret_val, 1)
 
         # Status WARNING, age 6h (over critical threshold(5h)), result code is CRITICAL
         ret_val = check_status_file.check_file(
-            self.create_test_status_file(self.timestamp_as_iso_8601(hours_offset=-6) + ";WARNING;description"), 3, 5)
+            self.create_test_status_file([self.timestamp_as_iso_8601(hours_offset=-6) + ";WARNING;description"]), 3, 5)
         self.assertEqual(ret_val, 2)
 
         # Status ERROR or CRITICAL age 2h (< warning(3h) < critical(5h)), result code is CRITICAL
         ret_val = check_status_file.check_file(
-            self.create_test_status_file(self.timestamp_as_iso_8601(hours_offset=-2) + ";ERROR;description"), 3, 5)
+            self.create_test_status_file([self.timestamp_as_iso_8601(hours_offset=-2) + ";ERROR;description"]), 3, 5)
         self.assertEqual(ret_val, 2)
         ret_val = check_status_file.check_file(
-            self.create_test_status_file(self.timestamp_as_iso_8601(hours_offset=-2) + ";CRITICAL;description"), 3, 5)
+            self.create_test_status_file([self.timestamp_as_iso_8601(hours_offset=-2) + ";CRITICAL;description"]), 3, 5)
         self.assertEqual(ret_val, 2)
 
         # Status ERROR or CRITICAL, age 4h (over warning threshold(3h) < critical(5h)), result code is CRITICAL
         ret_val = check_status_file.check_file(
-            self.create_test_status_file(self.timestamp_as_iso_8601(hours_offset=-4) + ";ERROR;description"), 3, 5)
+            self.create_test_status_file([self.timestamp_as_iso_8601(hours_offset=-4) + ";ERROR;description"]), 3, 5)
         self.assertEqual(ret_val, 2)
         ret_val = check_status_file.check_file(
-            self.create_test_status_file(self.timestamp_as_iso_8601(hours_offset=-4) + ";CRITICAL;description"), 3, 5)
+            self.create_test_status_file([self.timestamp_as_iso_8601(hours_offset=-4) + ";CRITICAL;description"]), 3, 5)
         self.assertEqual(ret_val, 2)
 
         # Status ERROR or CRITICAL, age 6h (over critical threshold(5h)), result code is CRITICAL
         ret_val = check_status_file.check_file(
-            self.create_test_status_file(self.timestamp_as_iso_8601(hours_offset=-6) + ";ERROR;description"), 3, 5)
+            self.create_test_status_file([self.timestamp_as_iso_8601(hours_offset=-6) + ";ERROR;description"]), 3, 5)
         self.assertEqual(ret_val, 2)
         ret_val = check_status_file.check_file(
-            self.create_test_status_file(self.timestamp_as_iso_8601(hours_offset=-6) + ";CRITICAL;description"), 3, 5)
+            self.create_test_status_file([self.timestamp_as_iso_8601(hours_offset=-6) + ";CRITICAL;description"]), 3, 5)
         self.assertEqual(ret_val, 2)
 
         # Different timezones
         # -1 hour
         self.assertEqual(0, check_status_file.check_file(
-            self.create_test_status_file(self.timestamp_as_iso_8601(hours_offset=-2, tz_seconds_offset=-3600) + ";OK;description"), 3, 5))
+            self.create_test_status_file([self.timestamp_as_iso_8601(hours_offset=-2, tz_seconds_offset=-3600) + ";OK;description"]), 3, 5))
         # +2 hour 30 min
         self.assertEqual(1, check_status_file.check_file(
-            self.create_test_status_file(self.timestamp_as_iso_8601(hours_offset=-4, tz_seconds_offset=9000) + ";OK;description"), 3, 5))
+            self.create_test_status_file([self.timestamp_as_iso_8601(hours_offset=-4, tz_seconds_offset=9000) + ";OK;description"]), 3, 5))
         # -15 min
         self.assertEqual(2, check_status_file.check_file(
-            self.create_test_status_file(self.timestamp_as_iso_8601(hours_offset=-6, tz_seconds_offset=-900) + ";OK;description"), 3, 5))
+            self.create_test_status_file([self.timestamp_as_iso_8601(hours_offset=-6, tz_seconds_offset=-900) + ";OK;description"]), 3, 5))
+
+        # Handles newline characters correctly (reads only the first line)
+        test_timestamp = self.timestamp_as_iso_8601(hours_offset=-2)
+
+        self.assertEqual(0, check_status_file.check_file(
+            self.create_test_status_file([test_timestamp + ";OK;test1-line1", ""]), 3, 5))
+        print_stdout_mock.assert_called_with("OK - test1-line1 [{}, 2.00 hour(s) ago]".format(test_timestamp))
+
+        self.assertEqual(0, check_status_file.check_file(
+            self.create_test_status_file([test_timestamp + ";OK;test2-line1", "line2", "line3"]), 3, 5))
+        print_stdout_mock.assert_called_with("OK - test2-line1 [{}, 2.00 hour(s) ago]".format(test_timestamp))
+
+        self.assertEqual(0, check_status_file.check_file(
+            self.create_test_status_file([test_timestamp + ";OK;test3-trailing-space ", "line2", "line3"]), 3, 5))
+        print_stdout_mock.assert_called_with("OK - test3-trailing-space  [{}, 2.00 hour(s) ago]".format(test_timestamp))
