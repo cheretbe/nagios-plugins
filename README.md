@@ -60,6 +60,20 @@ chmod 644 /etc/logrotate.d/nagious-plugins-update
 # Check log rotation status
 logrotate -d /etc/logrotate.d/nagious-plugins-update
 ```
+
+Add to sudoers (`visudo`):
+```
+# Allow update script to restart NRPE service
+nagios ALL=NOPASSWD: /usr/sbin/service nagios-nrpe-server stop
+nagios ALL=NOPASSWD: /usr/sbin/service nagios-nrpe-server start
+```
+On server:
+```
+# Allow update script to restart Nagios service
+nagios ALL=NOPASSWD: /usr/sbin/service nagios stop
+nagios ALL=NOPASSWD: /usr/sbin/service nagios start
+```
+
 * https://www.digitalocean.com/community/tutorials/how-to-manage-log-files-with-logrotate-on-ubuntu-12-10
 
 `/etc/nagios/nrpe.cfg` entry example:
