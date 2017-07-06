@@ -73,6 +73,27 @@
 			},
 			"Perfs" : ["9"]
 		},
+		"Intenso" : {
+			"Device" : ["INTENSO SSD 128GB"],
+			"ID#" : {
+				"1"   : "RAW_VALUE", # Raw_Read_Error_Rate
+				"5"   : "RAW_VALUE", # Reallocated_Sector_Ct
+				"9"   : "RAW_VALUE", # Power_On_Hours
+				"194" : "RAW_VALUE", # Temperature_Celsius
+				"195" : "RAW_VALUE", # Hardware_ECC_Recovered
+				"196" : "RAW_VALUE", # Reallocated_Event_Count
+				"199" : "RAW_VALUE"  # UDMA_CRC_Error_Count
+			},
+			"Threshs" : {
+				"1"   : ["0","5"],
+				"5"   : ["0","5"],
+				"194" : ["45","50"],
+				"195" : ["0","5"],
+				"196" : ["0","5"],
+				"199" : ["0","5"]
+			},
+			"Perfs" : ["9","194"]
+		},
 		"Hitachi" : {
 			"Device" : ["Hitachi Travelstar 5K320"],
 			"ID#" : {
