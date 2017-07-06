@@ -19,6 +19,10 @@ mkdir -p -m 755 /var/lib/nagios/log
 # on server:
 mkdir -p -m 755 /home/nagios/log
 
+/var/lib/nagios/nagios-plugins/update/update_nagios_plugins.sh --verbose >>/var/lib/nagios/log/nagious-plugins-update.log
+# on server
+/home/nagios/nagios-plugins/update/update_nagios_plugins.sh --verbose >>/home/nagios/log/nagious-plugins-update.log
+
 # as root
 printf "# Check for repository updates daily\n%02d %02d * * * nagios /var/lib/nagios/nagios-plugins/update/update_nagios_plugins.sh --verbose >>/var/lib/nagios/log/nagious-plugins-update.log\n" $((RANDOM % 60)) $((RANDOM % 25)) >/etc/cron.d/nagious-plugins-update
 # on server
