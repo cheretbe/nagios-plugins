@@ -58,7 +58,26 @@ EOL
 #Check log rotation status
 logrotate -d /etc/logrotate.d/nagious-plugins-update
 ```
-https://www.digitalocean.com/community/tutorials/how-to-manage-log-files-with-logrotate-on-ubuntu-12-10
+* https://www.digitalocean.com/community/tutorials/how-to-manage-log-files-with-logrotate-on-ubuntu-12-10
+
+`/etc/nagios/nrpe.cfg` entry example:
+```
+command[check_nagios_plugins_update_status]=/var/lib/nagios/nagios-plugins/check_smart_attributes/
+```
+On server
+```
+define command{
+        command_name check_nagios_plugins_update_status
+        command_line /home/nagios/nagios-plugins/check_status_file/check_status_file.py /home/nagios/plugins_update_sta$
+}
+
+define service{
+        use                     local-service
+        host_name               localhost
+        service_description     Nagios Plugins Update Status
+        check_command           check_nagios_plugins_update_status
+}
+```
 
 ## HDD SMART Attributes
 
