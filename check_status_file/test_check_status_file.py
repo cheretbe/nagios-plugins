@@ -143,13 +143,13 @@ class check_file_UnitTests(unittest.TestCase):
 
         # Status ERROR, age 3h (over warning threshold(2h) < critical(10h)), result code is CRITICAL
         open_mock.side_effect = [mock.mock_open(read_data="timestamp;ERROR;description").return_value]
-        self.assertEqual(check_status_file.check_file("file_name", 2, 10), 2)
-        print_stdout_mock.assert_called_with("CRITICAL - description [WARNING - 3.00 hour(s) since last status update is over the limit of 2 hour(s), timestamp]")
+        self.assertEqual(check_status_file.check_file("file_name", 2, 10), 1)
+        print_stdout_mock.assert_called_with("WARNING - 3.00 hour(s) since last status update is over the limit of 2 hour(s) [timestamp - description]")
 
         # Status CRITICAL, age 3h (over warning threshold(2h) < critical(10h)), result code is CRITICAL
         open_mock.side_effect = [mock.mock_open(read_data="timestamp;CRITICAL;description").return_value]
-        self.assertEqual(check_status_file.check_file("file_name", 2, 10), 2)
-        print_stdout_mock.assert_called_with("CRITICAL - description [WARNING - 3.00 hour(s) since last status update is over the limit of 2 hour(s), timestamp]")
+        self.assertEqual(check_status_file.check_file("file_name", 2, 10), 1)
+        print_stdout_mock.assert_called_with("WARNING - 3.00 hour(s) since last status update is over the limit of 2 hour(s) [timestamp - description]")
 
         get_timedelta_from_now_mock.return_value = 18000 # 5 hours
 
@@ -257,76 +257,23 @@ class check_file_FunctionalTests(unittest.TestCase):
     def test_file_exists_correct_data(self, print_stdout_mock):
         """Should return status depending on file contents"""
 
-        # Status OK, age 2h (< warning(3h) < critical(5h)), result code is OK
+        # Status OK, age 2h (< warning(25h) < critical(49h)), result code is OK
         test_timestamp = self.timestamp_as_iso_8601(hours_offset=-2)
         self.assertEqual(0, check_status_file.check_file(
-            self.create_test_status_file([test_timestamp + ";OK;description"]), 3, 5))
-        print_stdout_mock.assert_called_with("OK - description [{}, 2.00 hour(s) ago]".format(test_timestamp))
+            self.create_test_status_file([test_timestamp + ";OK;test service is running"]), 25, 49))
+        print_stdout_mock.assert_called_with("OK - test service is running [{}, 2.00 hour(s) ago]".format(test_timestamp))
 
-        # Status OK, age 4h (over warning threshold(3h) < critical(5h)), result code is WARNING
-        test_timestamp = self.timestamp_as_iso_8601(hours_offset=-4)
+        # Status OK, age 29.4h (over warning threshold(25h) < critical(49h)), result code is WARNING
+        test_timestamp = self.timestamp_as_iso_8601(hours_offset=-29.4)
         self.assertEqual(1, check_status_file.check_file(
-            self.create_test_status_file([test_timestamp + ";OK;description"]), 3, 5))
-        print_stdout_mock.assert_called_with("WARNING - 4.00 hour(s) since last status update is over the limit of 3 hour(s) [{} - description]".format(test_timestamp))
+            self.create_test_status_file([test_timestamp + ";OK;test file is in place"]), 25, 49))
+        print_stdout_mock.assert_called_with("WARNING - 29.40 hour(s) since last status update is over the limit of 25 hour(s) [{} - test file is in place]".format(test_timestamp))
 
-        # Status OK, age 6h (over critical threshold(5h)), result code is CRITICAL
-        test_timestamp = self.timestamp_as_iso_8601(hours_offset=-6)
+        # Status OK, age 56h (over critical threshold(49h)), result code is CRITICAL
+        test_timestamp = self.timestamp_as_iso_8601(hours_offset=-56)
         self.assertEqual(2, check_status_file.check_file(
-            self.create_test_status_file([test_timestamp + ";OK;description"]), 3, 5))
-        print_stdout_mock.assert_called_with("CRITICAL - 6.00 hour(s) since last status update is over the limit of 5 hour(s) [{} - description]".format(test_timestamp))
-
-        # Status WARNING, age 2h (< warning(3h) < critical(5h)), result code is WARNING
-        test_timestamp = self.timestamp_as_iso_8601(hours_offset=-2)
-        self.assertEqual(1, check_status_file.check_file(
-            self.create_test_status_file([test_timestamp + ";WARNING;description"]), 3, 5))
-        print_stdout_mock.assert_called_with("WARNING - description [{}, 2.00 hour(s) ago]".format(test_timestamp))
-
-        # Status WARNING, age 4h (over warning threshold(3h) < critical(5h)), result code is WARNING
-        test_timestamp = self.timestamp_as_iso_8601(hours_offset=-4)
-        self.assertEqual(1, check_status_file.check_file(
-            self.create_test_status_file([test_timestamp + ";WARNING;description"]), 3, 5))
-        print_stdout_mock.assert_called_with("WARNING - 4.00 hour(s) since last status update is over the limit of 3 hour(s) [{} - description]".format(test_timestamp))
-
-        # Status WARNING, age 6h (over critical threshold(5h)), result code is CRITICAL
-        test_timestamp = self.timestamp_as_iso_8601(hours_offset=-6)
-        self.assertEqual(2, check_status_file.check_file(
-            self.create_test_status_file([test_timestamp + ";WARNING;description"]), 3, 5))
-        print_stdout_mock.assert_called_with("CRITICAL - 6.00 hour(s) since last status update is over the limit of 5 hour(s) [{} - description]".format(test_timestamp))
-
-        # Status ERROR or CRITICAL age 2h (< warning(3h) < critical(5h)), result code is CRITICAL
-        test_timestamp = self.timestamp_as_iso_8601(hours_offset=-2)
-        self.assertEqual(2, check_status_file.check_file(
-            self.create_test_status_file([test_timestamp + ";ERROR;description"]), 3, 5))
-        print_stdout_mock.assert_called_with("CRITICAL - description [{}, 2.00 hour(s) ago]".format(test_timestamp))
-        self.assertEqual(2, check_status_file.check_file(
-            self.create_test_status_file([test_timestamp + ";CRITICAL;description"]), 3, 5))
-        print_stdout_mock.assert_called_with("CRITICAL - description [{}, 2.00 hour(s) ago]".format(test_timestamp))
-
-        # Status ERROR or CRITICAL, age 4h (over warning threshold(3h) < critical(5h)), result code is CRITICAL
-        test_timestamp = self.timestamp_as_iso_8601(hours_offset=-4)
-        self.assertEqual(2, check_status_file.check_file(
-            self.create_test_status_file([test_timestamp + ";ERROR;description"]), 3, 5))
-        print_stdout_mock.assert_called_with("CRITICAL - description [WARNING - 4.00 hour(s) since last status update is over the limit of 3 hour(s), {}]".format(test_timestamp))
-        self.assertEqual(2, check_status_file.check_file(
-            self.create_test_status_file([test_timestamp + ";CRITICAL;description"]), 3, 5))
-        print_stdout_mock.assert_called_with("CRITICAL - description [WARNING - 4.00 hour(s) since last status update is over the limit of 3 hour(s), {}]".format(test_timestamp))
-
-        # Status ERROR or CRITICAL, age 6h (over critical threshold(5h)), result code is CRITICAL
-        test_timestamp = self.timestamp_as_iso_8601(hours_offset=-6)
-        self.assertEqual(2, check_status_file.check_file(
-            self.create_test_status_file([test_timestamp + ";ERROR;description"]), 3, 5))
-        # print_stdout_mock.assert_called_with("CRITICAL - description [CRITICAL - 6.00 hour(s) since last status update is over the limit of 5 hour(s), {}]".format(test_timestamp))
-        self.assertEqual(2, check_status_file.check_file(
-            self.create_test_status_file([test_timestamp + ";CRITICAL;description"]), 3, 5))
-        # print_stdout_mock.assert_called_with("CRITICAL - description [CRITICAL - 6.00 hour(s) since last status update is over the limit of 5 hour(s), {}]".format(test_timestamp))
-
-
-        # ret_val = check_status_file.check_file(
-        #     self.create_test_status_file([self.timestamp_as_iso_8601(hours_offset=-6) + ";ERROR;description"]), 3, 5)
-        # self.assertEqual(ret_val, 2)
-        # ret_val = check_status_file.check_file(
-        #     self.create_test_status_file([self.timestamp_as_iso_8601(hours_offset=-6) + ";CRITICAL;description"]), 3, 5)
-        # self.assertEqual(ret_val, 2)
+            self.create_test_status_file([test_timestamp + ";OK;test status is OK"]), 25, 49))
+        print_stdout_mock.assert_called_with("CRITICAL - 56.00 hour(s) since last status update is over the limit of 49 hour(s) [{} - test status is OK]".format(test_timestamp))
 
         # Different timezones
         # -1 hour

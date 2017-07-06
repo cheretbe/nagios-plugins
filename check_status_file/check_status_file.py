@@ -75,7 +75,7 @@ def check_file(status_file_name, warning_hours, critical_hours):
 
     return_value = STATUS_UNKNOWN
 
-    if status_age <= datetime.timedelta(hours=warning_hours).seconds:
+    if status_age <= datetime.timedelta(hours=warning_hours).total_seconds():
         # Last status change is under the warning threshold
         if status_code == STATUS_OK:
             print_stdout("OK - {} [{}, {} ago]".format(status_data[2],
@@ -89,23 +89,13 @@ def check_file(status_file_name, warning_hours, critical_hours):
             print_stdout("CRITICAL - {} [{}, {} ago]".format(status_data[2],
                 status_data[0], status_age_hours_str))
             return_value = STATUS_CRITICAL
-    elif status_age <= datetime.timedelta(hours=critical_hours).seconds:
+    elif status_age <= datetime.timedelta(hours=critical_hours).total_seconds():
         # Last status change is over the warning threshold, but not over the critical
-        if status_code == STATUS_OK:
-            print_stdout("WARNING - {} since last status update is over the limit of {} hour(s) [{} - {}]".format(
-                status_age_hours_str, warning_hours, status_data[0], status_data[2]))
-            return_value = STATUS_WARNING
-        elif status_code == STATUS_WARNING:
-            print_stdout("WARNING - {} since last status update is over the limit of {} hour(s) [{} - {}]".format(
-                status_age_hours_str, warning_hours, status_data[0], status_data[2]))
-            return_value = STATUS_WARNING
-        else:
-            print_stdout("CRITICAL - {} [WARNING - {} since last status update is over the limit of {} hour(s), {}]".format(
-                status_data[2], status_age_hours_str, warning_hours, status_data[0]))
-            return_value = STATUS_CRITICAL
+        print_stdout("WARNING - {} since last status update is over the limit of {} hour(s) [{} - {}]".format(
+            status_age_hours_str, warning_hours, status_data[0], status_data[2]))
+        return_value = STATUS_WARNING
     else:
         # Last status change is over the critical threshold
-        # TODO: include last status code in square brackets
         print_stdout("CRITICAL - {} since last status update is over the limit of {} hour(s) [{} - {}]".format(
             status_age_hours_str, critical_hours, status_data[0], status_data[2]))
         return_value = STATUS_CRITICAL
