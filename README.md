@@ -71,11 +71,20 @@ define command{
         command_line /home/nagios/nagios-plugins/check_status_file/check_status_file.py /home/nagios/plugins_update_status
 }
 
+# Local
 define service{
         use                     local-service
         host_name               localhost
         service_description     Nagios Plugins Update Status
         check_command           check_nagios_plugins_update_status
+}
+
+# Remote
+define service {
+        use                     custom-service
+        hostgroup_name          custom-linux-servers
+        service_description     Nagios Plugins Update Status
+        check_command           check_nrpe!check_nagios_plugins_update_status
 }
 ```
 
