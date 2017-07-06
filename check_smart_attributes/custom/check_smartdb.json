@@ -30,25 +30,33 @@
 			"Perfs" : ["9","194"]
 		},
 		"Western Digital" : {
-			"Device" : ["Western Digital Caviar Green", "Western Digital Green"],
+			"Device" : ["Western Digital Caviar Green", "Western Digital Green","Western Digital Red"],
 			"ID#" : {
+				"1"    : "RAW_VALUE", # Raw_Read_Error_Rate
 				"5"    : "RAW_VALUE", # Reallocated_Sector_Ct
+				"7"    : "RAW_VALUE", # Seek_Error_Rate
 				"9"    : "RAW_VALUE", # Power_On_Hours
 				"10"   : "RAW_VALUE", # Spin_Retry_Count
+				"11"   : "RAW_VALUE", # Calibration_Retry_Count
 				"194"  : "RAW_VALUE", # Temperature_Celsius
 				"196"  : "RAW_VALUE", # Reallocated_Event_Count
 				"197"  : "RAW_VALUE", # Current_Pending_Sector
 				"198"  : "RAW_VALUE", # Offline_Uncorrectable
-				"199"  : "RAW_VALUE"  # UDMA_CRC_Error_Count
+				"199"  : "RAW_VALUE", # UDMA_CRC_Error_Count
+				"200"  : "RAW_VALUE"  # Multi_Zone_Error_Rate
 			},
 			"Threshs" : {
+				"1"   : ["0","5"],
 				"5"   : ["0","5"],
+				"7"   : ["0","5"],
 				"10"  : ["0","5"],
+				"11"  : ["0","5"],
 				"194" : ["45","50"],
 				"196" : ["0","5"],
 				"197" : ["0","5"],
 				"198" : ["0","5"],
-				"199" : ["0","5"]
+				"199" : ["0","5"],
+				"200" : ["0","5"]
 			},
 			"Perfs" : ["9","194"]
 		},
