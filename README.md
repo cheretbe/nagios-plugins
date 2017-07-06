@@ -17,7 +17,7 @@ service nagios-nrpe-server restart
 ```bash
 # as user nagios
 
-# Don't allow group writing to the directory to avoid logrotate skipping
+# Don't allow group writing to the directory in order to avoid logrotate skipping
 # rotation "because parent directory has insecure permissions"
 mkdir -p -m 755 /var/lib/nagios/log
 # on server:
@@ -55,7 +55,9 @@ cat >/etc/logrotate.d/nagious-plugins-update <<EOL
 }
 EOL
 
-#Check log rotation status
+# Don't allow group writing to the file in order to avoid logrotate skipping
+chmod 644 /etc/logrotate.d/nagious-plugins-update
+# Check log rotation status
 logrotate -d /etc/logrotate.d/nagious-plugins-update
 ```
 * https://www.digitalocean.com/community/tutorials/how-to-manage-log-files-with-logrotate-on-ubuntu-12-10
