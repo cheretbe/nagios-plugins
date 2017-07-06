@@ -62,13 +62,13 @@ logrotate -d /etc/logrotate.d/nagious-plugins-update
 
 `/etc/nagios/nrpe.cfg` entry example:
 ```
-command[check_nagios_plugins_update_status]=/var/lib/nagios/nagios-plugins/check_smart_attributes/
+command[check_nagios_plugins_update_status]=/var/lib/nagios/nagios-plugins/check_status_file/check_status_file.py /var/lib/nagios/plugins_update_status
 ```
 On server
 ```
 define command{
         command_name check_nagios_plugins_update_status
-        command_line /home/nagios/nagios-plugins/check_status_file/check_status_file.py /home/nagios/plugins_update_sta$
+        command_line /home/nagios/nagios-plugins/check_status_file/check_status_file.py /home/nagios/plugins_update_status
 }
 
 define service{
