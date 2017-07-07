@@ -123,7 +123,7 @@ https://en.wikipedia.org/wiki/S.M.A.R.T.#Known_ATA_S.M.A.R.T._attributes
 System-local thresholds:
 ```
 cp nagios-plugins/check_smart_attributes/check_smartcfg.json ./local_smartcfg.json
-/var/lib/nagios/nagios-plugins/check_smart_attributes/check_smart_attributes -dbj /var/lib/nagios/nagios-plugins/custom_check_smartdb.json -d /dev/sda -d /dev/sdb -d /dev/sdc -d /dev/sdd -d /dev/sde -d /dev/sdf -ucfgj /var/lib/nagios/local_smartcfg.json
+/var/lib/nagios/nagios-plugins/check_smart_attributes/check_smart_attributes -dbj /var/lib/nagios/nagios-plugins/custom_check_smartdb.json -d /dev/sda -d /dev/sdb -d /dev/sdc -d /dev/sdd -d /dev/sde -d /dev/sdf -ucfgj  /etc/nagios/local_smartcfg.json
 ```
 Sample local_smartcfg.json contents
 ``` json
