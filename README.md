@@ -32,17 +32,17 @@ mkdir -p -m 755 /var/lib/nagios/log
 # on server:
 mkdir -p -m 755 /home/nagios/log
 
-/var/lib/nagios/nagios-plugins/update/update_nagios_plugins.sh --verbose >>/var/lib/nagios/log/nagious-plugins-update.log
+/var/lib/nagios/nagios-plugins/update/update_nagios_plugins.sh --verbose >>/var/lib/nagios/log/nagios-plugins-update.log
 # on server
-/home/nagios/nagios-plugins/update/update_nagios_plugins.sh --verbose >>/home/nagios/log/nagious-plugins-update.log
+/home/nagios/nagios-plugins/update/update_nagios_plugins.sh --verbose >>/home/nagios/log/nagios-plugins-update.log
 
 # as root
-printf "# Check for repository updates daily\n%02d %02d * * * nagios /var/lib/nagios/nagios-plugins/update/update_nagios_plugins.sh --verbose >>/var/lib/nagios/log/nagious-plugins-update.log\n" $((RANDOM % 60)) $((RANDOM % 25)) >/etc/cron.d/nagious-plugins-update
+printf "# Check for repository updates daily\n%02d %02d * * * nagios /var/lib/nagios/nagios-plugins/update/update_nagios_plugins.sh --verbose >>/var/lib/nagios/log/nagios-plugins-update.log\n" $((RANDOM % 60)) $((RANDOM % 25)) >/etc/cron.d/nagios-plugins-update
 # on server
-printf "# Check for repository updates daily\n%02d %02d * * * nagios /home/nagios/nagios-plugins/update/update_nagios_plugins.sh --verbose >>/home/nagios/log/nagious-plugins-update.log\n" $((RANDOM % 60)) $((RANDOM % 25)) >/etc/cron.d/nagious-plugins-update
+printf "# Check for repository updates daily\n%02d %02d * * * nagios /home/nagios/nagios-plugins/update/update_nagios_plugins.sh --verbose >>/home/nagios/log/nagios-plugins-update.log\n" $((RANDOM % 60)) $((RANDOM % 25)) >/etc/cron.d/nagios-plugins-update
 
-cat >/etc/logrotate.d/nagious-plugins-update <<EOL
-/var/lib/nagios/log/nagious-plugins-update.log {
+cat >/etc/logrotate.d/nagios-plugins-update <<EOL
+/var/lib/nagios/log/nagios-plugins-update.log {
   monthly
   rotate 3
   size 50M
@@ -55,8 +55,8 @@ cat >/etc/logrotate.d/nagious-plugins-update <<EOL
 EOL
 
 # on server
-cat >/etc/logrotate.d/nagious-plugins-update <<EOL
-/home/nagios/log/nagious-plugins-update.log {
+cat >/etc/logrotate.d/nagios-plugins-update <<EOL
+/home/nagios/log/nagios-plugins-update.log {
   monthly
   rotate 3
   size 50M
@@ -69,9 +69,9 @@ cat >/etc/logrotate.d/nagious-plugins-update <<EOL
 EOL
 
 # Don't allow group writing to the file in order to avoid logrotate skipping
-chmod 644 /etc/logrotate.d/nagious-plugins-update
+chmod 644 /etc/logrotate.d/nagios-plugins-update
 # Check log rotation status
-logrotate -d /etc/logrotate.d/nagious-plugins-update
+logrotate -d /etc/logrotate.d/nagios-plugins-update
 ```
 * https://www.digitalocean.com/community/tutorials/how-to-manage-log-files-with-logrotate-on-ubuntu-12-10
 
