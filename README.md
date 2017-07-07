@@ -41,6 +41,8 @@ printf "# Check for repository updates daily\n%02d %02d * * * nagios /var/lib/na
 # on server
 printf "# Check for repository updates daily\n%02d %02d * * * nagios /home/nagios/nagios-plugins/update/update_nagios_plugins.sh --verbose >>/home/nagios/log/nagios-plugins-update.log\n" $((RANDOM % 60)) $((RANDOM % 25)) >/etc/cron.d/nagios-plugins-update
 
+chmod 644 /etc/cron.d/nagios-plugins-update
+
 cat >/etc/logrotate.d/nagios-plugins-update <<EOL
 /var/lib/nagios/log/nagios-plugins-update.log {
   monthly
