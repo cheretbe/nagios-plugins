@@ -1,5 +1,9 @@
 Custom Nagios plugins collection (downloaded and self-written)
 
+## TODO
+* https://github.com/HariSekhon/nagios-plugins/blob/master/check_yum.py
+* https://serverfault.com/questions/122178/how-can-i-check-from-the-command-line-if-a-reboot-is-required-on-rhel-or-centos/311733#311733
+
 ## Installation
 ```bash
 apt-get install git libconfig-json-perl smartmontools nagios-plugins nagios-nrpe-server python python-tz python-dateutil
