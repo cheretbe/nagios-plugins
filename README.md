@@ -36,14 +36,14 @@ mkdir -p -m 755 /var/lib/nagios/log
 # on server:
 mkdir -p -m 755 /home/nagios/log
 
-/var/lib/nagios/nagios-plugins/update/update_nagios_plugins.sh >>/var/lib/nagios/log/nagios-plugins-update.log
+/var/lib/nagios/nagios-plugins/update/update_nagios_plugins.sh --verbose >>/var/lib/nagios/log/nagios-plugins-update.log
 # on server
-/home/nagios/nagios-plugins/update/update_nagios_plugins.sh >>/home/nagios/log/nagios-plugins-update.log
+/home/nagios/nagios-plugins/update/update_nagios_plugins.sh --verbose >>/home/nagios/log/nagios-plugins-update.log
 
 # as root
-printf "# Check for repository updates daily\n%02d %02d * * * nagios /var/lib/nagios/nagios-plugins/update/update_nagios_plugins.sh --verbose >>/var/lib/nagios/log/nagios-plugins-update.log\n" $((RANDOM % 60)) $((RANDOM % 25)) >/etc/cron.d/nagios-plugins-update
+printf "# Check for repository updates daily\n%02d %02d * * * nagios /var/lib/nagios/nagios-plugins/update/update_nagios_plugins.sh >>/var/lib/nagios/log/nagios-plugins-update.log\n" $((RANDOM % 60)) $((RANDOM % 25)) >/etc/cron.d/nagios-plugins-update
 # on server
-printf "# Check for repository updates daily\n%02d %02d * * * nagios /home/nagios/nagios-plugins/update/update_nagios_plugins.sh --verbose >>/home/nagios/log/nagios-plugins-update.log\n" $((RANDOM % 60)) $((RANDOM % 25)) >/etc/cron.d/nagios-plugins-update
+printf "# Check for repository updates daily\n%02d %02d * * * nagios /home/nagios/nagios-plugins/update/update_nagios_plugins.sh >>/home/nagios/log/nagios-plugins-update.log\n" $((RANDOM % 60)) $((RANDOM % 25)) >/etc/cron.d/nagios-plugins-update
 
 chmod 644 /etc/cron.d/nagios-plugins-update
 
