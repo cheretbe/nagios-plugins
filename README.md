@@ -3,6 +3,9 @@ Custom Nagios plugins collection (downloaded and self-written)
 ## TODO
 * https://github.com/HariSekhon/nagios-plugins/blob/master/check_yum.py
 * https://serverfault.com/questions/122178/how-can-i-check-from-the-command-line-if-a-reboot-is-required-on-rhel-or-centos/311733#311733
+* https://exchange.nagios.org/directory/Plugins/Hardware/Others/check_raspberry_temp/details
+* https://exchange.nagios.org/directory/Plugins/Hardware/Server-Hardware/Others/check_rasp_temp/details
+* https://exchange.nagios.org/directory/Plugins/Hardware/Others/check_rpi_temperature/details
 
 ## Installation
 ```bash
