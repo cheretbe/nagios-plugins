@@ -9,7 +9,7 @@ Custom Nagios plugins collection (downloaded and self-written)
 
 ## Installation
 ```bash
-apt-get install git libconfig-json-perl smartmontools nagios-plugins nagios-nrpe-server python python-tz python-dateutil
+apt-get install git libconfig-json-perl smartmontools nagios-plugins nagios-nrpe-server python python-tz python-dateutil python-requests python-lxml
 
 # As user nagios (temporary allow shell via vipw) in the home dir (/var/lib/nagios, check with pwd)
 git clone https://github.com/cheretbe/nagios-plugins.git
