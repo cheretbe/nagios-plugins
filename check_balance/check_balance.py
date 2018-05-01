@@ -55,11 +55,8 @@ def do_check_balance():
         check_http_reply(session.post("https://stat.sovatelecom.ru/login_user.htms", data=post_data))
         response = session.get("https://stat.sovatelecom.ru/main.htms")
         check_http_reply(response)
-        balance_str = lxml.etree.HTML(response.text).xpath('//*[@id="onyma_stat_main_fin"]/table[1]/tr[2]/td[1]/table[2]/tr[1]/td[1]/table[1]/tr[4]/td[2]')[0].text
+        balance_str = lxml.etree.HTML(response.text).xpath('//*[@id="onyma_stat_main_fin"]/table[1]/tr[2]/td[1]/table[2]/tr[1]/td[1]/table[1]/tr[last()]/td[2]')[0].text
         balance = float(balance_str.replace(u"Остаток\xa0:\xa0", u"").replace(u" RUB", u""))
-
-    # import ipdb
-    # ipdb.set_trace()
 
     print_debug(u"Balance as string: {}".format(balance_str))
     print_debug("Balance: {}".format(balance))
