@@ -47,6 +47,7 @@ def do_check_balance():
         # Easy way to find xpath is to save reply as html, open in Chrome and
         # use "Inspect" > right click "Copy" > "Copy XPath"
         balance_str = lxml.etree.HTML(response.text).xpath('/html/body/div/main/div[2]/table[1]/tr[6]/td[2]')[0].text
+        print_debug(u"Balance as string: {}".format(balance_str))
         balance = float(balance_str.replace(u" руб. ", u"").replace(u",", u"."))
     else:
         check_http_reply(session.get("https://stat.sovatelecom.ru/"))
@@ -56,9 +57,9 @@ def do_check_balance():
         response = session.get("https://stat.sovatelecom.ru/main.htms")
         check_http_reply(response)
         balance_str = lxml.etree.HTML(response.text).xpath('//*[@id="onyma_stat_main_fin"]/table[1]/tr[2]/td[1]/table[2]/tr[1]/td[1]/table[1]/tr[last()]/td[2]')[0].text
-        balance = float(balance_str.replace(u"Остаток\xa0:\xa0", u"").replace(u" RUB", u""))
+        print_debug(u"Balance as string: {}".format(balance_str))
+        balance = float(balance_str.replace(u"Остаток\xa0:\xa0", u"").replace(u" RUB", u"").replace(u",", u""))
 
-    print_debug(u"Balance as string: {}".format(balance_str))
     print_debug("Balance: {}".format(balance))
 
     if balance < options.critical_balance:
