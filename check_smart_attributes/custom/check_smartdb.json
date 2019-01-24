@@ -3,7 +3,8 @@
 		"Seagate" : {
 			"Device" : ["Seagate Barracuda 7200.9", "Seagate Barracuda 7200.10",
 									"Seagate Barracuda 7200.12", "Seagate Barracuda 7200.14",
-									"Seagate Constellation ES", "Seagate Barracuda 7200.7 and 7200.7 Plus"],
+									"Seagate Constellation ES", "Seagate Barracuda 7200.7 and 7200.7 Plus",
+				   					"ST4000DM004-2CV104"],
 			"ID#" : {
 				"5"    : "RAW_VALUE", # Reallocated_Sector_Ct
 				"9"    : "RAW_VALUE", # Power_On_Hours
