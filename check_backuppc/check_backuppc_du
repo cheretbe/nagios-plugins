@@ -40,6 +40,7 @@ Getopt::Long::Configure('bundling');
 
 # BackupPC
 use lib "/usr/share/backuppc/lib";
+use lib "/usr/local/BackupPC/lib";
 use BackupPC::Lib;
 
 my $version = '1.0';
