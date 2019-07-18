@@ -1,0 +1,40 @@
+#!/bin/bash
+
+cd /var/lib/backuppc/pc
+
+OUT="<table align=center>
+<thead>
+  <tr>
+    <th rowspan=2 align=left>Host</th>
+    <th colspan=2>Nb backups</th>
+  <tr>
+    <th>Before V4</th>
+    <th>After V4</th>
+  </tr>
+</thead>
+<tbody>"
+t_v3=0
+t_v4=0
+for h in *
+do
+	[ ! -d "$h" -o ! -e "$h/backups" ] && continue
+	vers=$( cat $h/backups|cut -f24 )
+	v3=$( echo -e "$vers"|grep -Ev '^4'|wc -l|cut -f1 )
+	let t_v3=t_v3+v3
+	[ $v3 -ne 0 ] && v3="<strong>$v3</strong>"
+	v4=$( echo -e "$vers"|grep -Ec '^4' )
+	let t_v4=t_v4+v4
+	OUT="$OUT<tr><td align=left>$h</td><td>$v3</td><td>$v4</td></tr>"
+done
+[ $t_v3 -gt 0 ] && t_v3="<strong>$t_v3</strong>"
+OUT="$OUT
+</tbody>
+<tfooter>
+  <tr>
+    <th align=right>Total :</th>
+    <th>$t_v3</th>
+    <th>$t_v4</th>
+  </tr>
+</tfooter>
+</table>"
+echo $OUT|lynx -stdin

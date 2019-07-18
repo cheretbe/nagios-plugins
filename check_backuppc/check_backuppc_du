@@ -1,0 +1,178 @@
+#!/usr/bin/perl
+#
+# check_backuppc_du: a Nagios plugin to check the compressed disk usage of BackupPC hosts
+#
+# Tested against BackupPC 3 (3.2.1) and 4 (4.1.5) and Icinga (1.11.6)
+#   <https://backuppc.github.io/backuppc/>
+#   <https://www.icinga.com>
+#
+# AUTHORS
+#   Benjamin Renard  <brenard@easter-eggs.com>
+#   Emmanuel Lacour  <elacour@easter-eggs.com>
+#
+# COPYRIGHT
+#   Copyright (C) 2018 Easter-eggs
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#
+
+use strict;
+no utf8;
+
+# Nagios
+use lib "/usr/lib/nagios/plugins";
+use utils qw(%ERRORS $TIMEOUT);
+use POSIX qw(strftime difftime);
+use Getopt::Long;
+Getopt::Long::Configure('bundling');
+
+# BackupPC
+use lib "/usr/share/backuppc/lib";
+use BackupPC::Lib;
+
+my $version = '1.0';
+# Default quota (GB)
+my $quota = 100;
+my $opt_V = 0;
+my $opt_h = 0;
+my $host;
+my @hostlist;
+my %Status;
+my $statusCode = 'OK';
+
+
+# Process options
+my $goodOpt = GetOptions(
+	'q=f' => \$quota, 'quota=f' => \$quota,
+	'V' => \$opt_V, 'version' => \$opt_V,
+	'h' => \$opt_h, 'help' => \$opt_h,
+	'H=s' => \$host, 'hostname=s' => \$host,
+	'L=s' => \@hostlist, 'hostlist=s' => \@hostlist,
+	);	
+
+if ($opt_V)
+{
+	print "check_backuppc_du - " . $version . "\n";
+	exit $ERRORS{'OK'};
+}
+if ($opt_h or not $goodOpt)
+{
+	print "check_backuppc_du - " . $version . "\n";
+	print "A Nagios plugin to check on BackupPC backup status.\n\n";
+	print "Options:\n";
+	print "  --hostname,-H      perl regexp to match hostnames\n";
+	print "  --quota,-q         quota size (GB)\n";
+	print "  --version,-V       display plugin version\n";
+	print "  --help,-h          display this message\n\n";
+	exit $ERRORS{'OK'} if $goodOpt;
+	exit $ERRORS{'UNKNOWN'};
+}
+
+# Connect to BackupPC
+my $server;
+if (!($server = BackupPC::Lib->new))
+{
+	print "BACKUPPC CRITICAL - Couldn't connect to BackupPC\n";
+	exit $ERRORS{'CRITICAL'};
+}
+my %Conf = $server->Conf();
+
+$server->ChildInit();
+
+my $err = $server->ServerConnect($Conf{ServerHost}, $Conf{ServerPort});
+if ($err)
+{
+	print("BACKUPPC UNKNOWN - Can't connect to server ($err)\n");
+	exit $ERRORS{'UNKNOWN'};
+}
+
+# query the BackupPC server for host status
+my $status_raw = $server->ServerMesg('status hosts');
+my $hosts_infos = $server->HostInfoRead();
+
+# undump the output... BackupPC uses Data::Dumper
+eval $status_raw;
+
+# Allow hostname separeted by comma
+@hostlist = split(/,/,join(',',@hostlist));
+
+my $per_host_detail;
+my $total_usage = 0;
+my $total_count = 0;
+my $host_count = 0;
+foreach my $hostname ( sort(keys %Status) ) {
+
+	next if $hostname =~ /^\s*$/;
+	next if $hostname =~ /^ /;
+	next if ( $host && $hostname !~ m/$host/ );
+	next if ( scalar(@hostlist) > 0 && not(grep /^\Q$hostname$/, @hostlist) );
+
+	my %HostStatus = %{$Status{$hostname}};
+	my %host_conf = %{$server->ConfigDataRead($hostname)};
+	$HostStatus{BackupsDisable} = $host_conf{BackupsDisable};
+	next if ( $HostStatus{BackupsDisable} );
+	next if ($HostStatus{'type'} eq 'archive');
+
+	$host_count++;
+
+	# Backups
+	my @Backups = $server->BackupInfoRead($hostname);
+
+	# Get aggregate of compressed used size (octets)
+	my $full_size = 0;
+	my $backups_count = 0;
+	foreach my $Backup (sort {$a->{num} cmp $b->{num}} @Backups) {
+		if ( $full_size == 0 ) {
+			$full_size += $Backup->{sizeExistComp};
+			$full_size += $Backup->{sizeNewComp};
+		} else {
+			$full_size += $Backup->{sizeNewComp};
+		}
+		$backups_count++;
+	}
+
+	$total_usage += $full_size;
+	$total_count += $backups_count;
+
+	# Convert to Go
+	$full_size = sprintf("%0.2f", $full_size / 1024 / 1024 / 1024);
+
+	# Output size
+	$per_host_detail .= "$hostname: $backups_count backups / $full_size Go\n";
+}
+
+unless ( $host_count ) {
+	print "BACKUPPC UNKNOWN - no host matching $host\n";
+	exit $ERRORS{'UNKNOWN'};
+}
+
+$total_usage = sprintf("%0.2f", $total_usage / 1024 / 1024 / 1024);
+
+if ( $total_usage >= $quota ) {
+	print "BACKUPPC CRITICAL - $total_usage Go used / $quota Go allocated\n";
+	$statusCode = 'CRITICAL';
+} elsif ( $total_usage >= $quota * 0.90 ) {
+	print "BACKUPPC WARNING - $total_usage Go used / $quota Go allocated\n";
+	$statusCode = 'WARNING';
+} else {
+	print "BACKUPPC OK - $total_usage Go used / $quota Go allocated\n";
+}
+
+print "Total of $total_count backups with cumulative compressed size of $total_usage Go for $host_count active hosts\n";
+print $per_host_detail;
+
+
+exit $ERRORS{$statusCode};
+

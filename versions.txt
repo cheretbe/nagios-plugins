@@ -16,10 +16,8 @@ Commit 0472165 (30.09.2015)
 
 4) Check BackupPC Status Plugin
 https://exchange.nagios.org/directory/Plugins/Backup-and-Recovery/BackupPC/check_backuppc-(new)/details
-http://git.zionetrix.net/check_backuppc
-Download URL:
-http://git.zionetrix.net/download/check_backuppc/check_backuppc
-version 1.1.2 (17.11.2015)
+https://gogs.zionetrix.net/bn8/check_backuppc
+version 1.1.3 (commit b2446abfd0 05.04.2018)
 
 4) NSCA Win32 Client
 https://exchange.nagios.org/directory/Addons/Passive-Checks/NSCA-Win32-Client/details
