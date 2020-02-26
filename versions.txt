@@ -28,4 +28,4 @@ No version info
 
 5) Ubuntu Unattended Upgrades Plugin
 https://github.com/JivanAmara/nagios_unattended_upgrades_reboot_plugin
-version 1.2 (26.03.2015)
+version 1.2 (26.03.2015) - with custom modifications

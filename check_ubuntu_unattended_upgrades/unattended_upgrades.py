@@ -2,6 +2,8 @@
 from __future__ import unicode_literals, print_function
 import subprocess, sys, os, re
 
+import argparse
+
 OK = 0
 WARNING = 1
 CRITICAL = 2
@@ -59,6 +61,11 @@ def get_config_value(config_filename, config_value_regex):
 
 
 try:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-c", "--config-file", dest="config_file", default="",
+        help='Custom config file')
+    options = parser.parse_args()
+
     # --- Check that 'update-notifier-common' is installed.
     #    This isn't really necessary on Ubuntu machines, but will remind Debian users that this
     #    package is necessary & other distro admins that they can't use this script.
@@ -76,7 +83,10 @@ try:
     # --- Check that unattended-upgrades is configured to install security updates.
     # '^\s*' Ensures that the line isn't commented out
     expected_content_regex = r'^\s*' + re.escape(r'"${distro_id}:${distro_codename}-security";')
-    config_filename = '/etc/apt/apt.conf.d/50unattended-upgrades'
+    if options.config_file:
+        config_filename = options.config_file
+    else:
+        config_filename = '/etc/apt/apt.conf.d/50unattended-upgrades'
     if not config_file_contains(config_filename, expected_content_regex):
         print("CRITICAL - 'unattended-upgrades' is not configured to install security updates")
         sys.exit(CRITICAL)
@@ -84,7 +94,10 @@ try:
     # --- Check that unattended-upgrades is configured to install recommended updates.
     # '^\s*' Ensures that the line isn't commented out.
     expected_content_regex = r'^\s*' + re.escape(r'"${distro_id}:${distro_codename}-updates";')
-    config_filename = '/etc/apt/apt.conf.d/50unattended-upgrades'
+    if options.config_file:
+        config_filename = options.config_file
+    else:
+        config_filename = '/etc/apt/apt.conf.d/50unattended-upgrades'
     if not config_file_contains(config_filename, expected_content_regex):
         print("WARNING - 'unattended-upgrades' is not configured to install recommended updates")
         sys.exit(WARNING)
@@ -92,7 +105,10 @@ try:
     # --- Check that unattended-upgrades is configured to run.
     # This could be set up in "/etc/apt/apt.conf.d/10periodic" (deprecated) or in
     #    "/etc/apt/apt.conf.d/20unattended-upgrades".
-    config_filename = '/etc/apt/apt.conf.d/20auto-upgrades'
+    if options.config_file:
+        config_filename = options.config_file
+    else:
+        config_filename = '/etc/apt/apt.conf.d/20auto-upgrades'
     if not os.path.isfile(config_filename):
         config_filename = '/etc/apt/apt.conf.d/10periodic'
     config_variable_regexes = [
