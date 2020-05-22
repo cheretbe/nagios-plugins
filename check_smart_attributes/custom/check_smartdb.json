@@ -156,6 +156,20 @@
 				"223" : ["0","5"]
 			},
 			"Perfs" : ["9","194"]
-		}
+		},
+                "Verbatim" : {
+                        "Device" : ["Vi550 S3 SSD"],
+                        "ID#" : {
+                                "1"   : "RAW_VALUE", # Raw_Read_Error_Rate
+                                "9"   : "RAW_VALUE", # Power_On_Hours
+                                "12"  : "RAW_VALUE", # Power_Cycle_Count
+                                "194" : "RAW_VALUE"  # Temperature_Celsius
+                        },
+                        "Threshs" : {
+                                "1"   : ["0","5"],
+                                "194" : ["45","50"]
+                        },
+                        "Perfs" : ["9","12","194"]
+                }
 	}
 }
