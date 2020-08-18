@@ -29,3 +29,7 @@ No version info
 5) Ubuntu Unattended Upgrades Plugin
 https://github.com/JivanAmara/nagios_unattended_upgrades_reboot_plugin
 version 1.2 (26.03.2015) - with custom modifications
+
+6) check_smart monitoring plugin
+https://github.com/Napsty/check_smart
+version 6.7.1 (02.06.2020)
