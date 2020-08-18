@@ -9,7 +9,19 @@ Custom Nagios plugins collection (downloaded and self-written)
 
 ## Installation
 ```bash
-apt-get install git libconfig-json-perl smartmontools nagios-plugins nagios-nrpe-server python python-tz python-dateutil python-requests python-lxml
+apt-get install git libconfig-json-perl smartmontools nagios-plugins nagios-nrpe-server python\
+  python-tz python-dateutil python-requests python-lxml
+
+# Ubuntu 20.04
+apt install git libconfig-json-perl smartmontools monitoring-plugins \
+  nagios-nrpe-server python-is-python2 python-tz python-dateutil \
+  python-lxml python-idna python-certifi
+# There are no python-requests and python-urllib3 packages in 20.04 repos
+# Find latest versions for 19.10 at
+# https://packages.ubuntu.com/eoan/all/python-requests/download
+# https://packages.ubuntu.com/eoan/all/python-urllib3/download
+dpkg -i python-urllib3_1.24.1-1ubuntu1_all.deb
+dpkg -i python-requests_2.21.0-1_all.deb
 
 # As user nagios (temporary allow shell via vipw) in the home dir (/var/lib/nagios, check with pwd)
 git clone https://github.com/cheretbe/nagios-plugins.git
