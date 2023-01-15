@@ -48,7 +48,7 @@ def do_check_balance():
         # use "Inspect" > right click "Copy" > "Copy XPath"
         balance_str = lxml.etree.HTML(response.text).xpath('/html/body/div/main/div[2]/table[1]/tr[4]/td[2]')[0].text
         print_debug(u"Balance as string: {}".format(balance_str))
-        balance = float(balance_str.replace(u" руб. ", u"").replace(u",", u"."))
+        balance = float(balance_str.replace(u" руб.", u"").replace(u",", u"."))
     else:
         check_http_reply(session.get("https://stat.sovatelecom.ru/"))
         post_data = {"LOGIN": options.login, "PASSWD": options.password,
