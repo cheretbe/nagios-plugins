@@ -103,6 +103,8 @@ def do_check_balance():
         if datetime.datetime.today().day == options.withdrawal_day:
             if not todays_withdrawal:
                 next_withdrawal_date = datetime.datetime.today().date()
+        if balance < 0:
+            next_withdrawal_date = datetime.datetime.today().date()
         days_until_withdrawal = (next_withdrawal_date - datetime.date.today()).days
 
         status_text = "Balance: {}, next withdrawal: {} (in {} day(s))".format(
