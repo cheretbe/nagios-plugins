@@ -74,7 +74,7 @@ def do_check_balance():
                     # "07.07.2023",
                     # .today()?
                     datetime.datetime.now().strftime("%d.%m.%Y"),
-                    "-{},00".format(options.withdrawal_amount)
+                    "-{},00".format("{:,d}".format(options.withdrawal_amount).replace(",", " "))
                 )
             )
             todays_withdrawal = len(todays_withdrawal_entry) != 0
