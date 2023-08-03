@@ -107,8 +107,12 @@ def do_check_balance():
             next_withdrawal_date = datetime.datetime.today().date()
         days_until_withdrawal = (next_withdrawal_date - datetime.date.today()).days
 
-        status_text = "Balance: {}, next withdrawal: {} (in {} day(s))".format(
-            balance, next_withdrawal_date, days_until_withdrawal
+        status_text = "Balance: {}, next withdrawal: {} (in {} day(s)), account: {}, amount: {}".format(
+            balance,
+            next_withdrawal_date,
+            days_until_withdrawal,
+            options.login,
+            options.withdrawal_amount
         )
         if balance < options.withdrawal_amount:
             if days_until_withdrawal < options.critical_threshold:
