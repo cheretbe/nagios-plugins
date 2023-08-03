@@ -121,6 +121,8 @@ def do_check_balance():
                 write_status("WARNING", status_text)
             else:
                 write_status("OK", status_text)
+        else:
+            write_status("OK", status_text)
     else:
         if balance < options.critical_threshold:
             write_status("CRITICAL", "Balance {} is less than critical threshold of {}".format(balance, options.critical_threshold))
