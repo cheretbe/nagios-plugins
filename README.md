@@ -16,12 +16,16 @@ apt-get install git libconfig-json-perl smartmontools nagios-plugins nagios-nrpe
 apt install git libconfig-json-perl smartmontools monitoring-plugins \
   nagios-nrpe-server python-is-python2 python-tz python-dateutil \
   python-lxml python-idna python-certifi
+# Deprecated (dependecies removed):
 # There are no python-requests and python-urllib3 packages in 20.04 repos
 # Find latest versions for 19.10 at
 # https://packages.ubuntu.com/eoan/all/python-requests/download
 # https://packages.ubuntu.com/eoan/all/python-urllib3/download
 dpkg -i python-urllib3_1.24.1-1ubuntu1_all.deb
 dpkg -i python-requests_2.21.0-1_all.deb
+
+# Ubuntu 22.04
+apt install git libconfig-json-perl smartmontools monitoring-plugins   nagios-nrpe-server virtualenv python2 python2-pip-whl python2-setuptools-whl
 
 # As user nagios (temporary allow shell via vipw) in the home dir (/var/lib/nagios, check with pwd)
 git clone https://github.com/cheretbe/nagios-plugins.git
