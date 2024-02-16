@@ -16,7 +16,6 @@ apt-get install git libconfig-json-perl smartmontools nagios-plugins nagios-nrpe
 apt install git libconfig-json-perl smartmontools monitoring-plugins \
   nagios-nrpe-server python-is-python2 python-tz python-dateutil \
   python-lxml python-idna python-certifi
-# Deprecated (dependecies removed):
 # There are no python-requests and python-urllib3 packages in 20.04 repos
 # Find latest versions for 19.10 at
 # https://packages.ubuntu.com/eoan/all/python-requests/download
@@ -26,6 +25,17 @@ dpkg -i python-requests_2.21.0-1_all.deb
 
 # Ubuntu 22.04
 apt install git libconfig-json-perl smartmontools monitoring-plugins   nagios-nrpe-server virtualenv python2 python2-pip-whl python2-setuptools-whl
+
+sudo su - nagios -s /bin/bash
+virtualenv -p python2 ~/.cache/venv/py2
+nano .profile
+# Add the following
+# export PATH=/var/lib/nagios/.cache/venv/py2/bin:$PATH
+# re-login
+python -m site
+pip install pytz dateutils lxml idna certifi
+
+
 
 # As user nagios (temporary allow shell via vipw) in the home dir (/var/lib/nagios, check with pwd)
 git clone https://github.com/cheretbe/nagios-plugins.git
