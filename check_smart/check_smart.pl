@@ -43,23 +43,40 @@
 # Dec 4, 2019: Ander Punnar - Fix 'deprecation warning on regex with curly brackets' (6.6.1)
 # Mar 25, 2020: Claudio Kuenzler - Add support for NVMe devices (6.7.0)
 # Jun 2, 2020: Claudio Kuenzler - Bugfix to make --warn work (6.7.1)
+# Oct 14, 2020: Claudio Kuenzler - Allow skip self-assessment check (--skip-self-assessment) (6.8.0)
+# Oct 14, 2020: Claudio Kuenzler - Add Command_Timeout to default raw list (6.8.0)
+# Mar 3, 2021: Evan Felix - Allow use of colons in pathnames so /dev/disk/by-path/ device names work (6.9.0)
+# Mar 4, 2021: Claudio Kuenzler - Add SSD attribute Percent_Lifetime_Remain check (-l|--ssd-lifetime) (6.9.0)
+# Apr 8, 2021: Claudio Kuenzler - Fix regex for pseudo-devices (6.9.1)
+# Jul 6, 2021: Bernhard Bittner - Add aacraid devices (6.10.0)
+# Oct 4, 2021: Claudio Kuenzler + Peter Newman - Handle dots in NVMe attributes, prioritize (order) alerts (6.11.0)
+# Dec 10, 2021: Claudio Kuenzler - Sec fix in path for pseudo-devices, add Erase_Fail_Count_Total, fix NVMe perfdata (6.12.0)
+# Dec 10, 2021: Claudio Kuenzler - Bugfix in interface handling (6.12.1)
+# Dec 16, 2021: Lorenz Kaestle - Bugfix when interface parameter was missing in combination with -g (6.12.2)
+# Apr 27, 2022: Claudio Kuenzler - Allow skip temperature check (--skip-temp-check) (6.13.0)
+# Apr 27, 2022: Peter Newman - Better handling of missing or non-executable smartctl command (6.13.0)
+# Apr 29, 2023: Nick Bertrand - Show drive(s) causing UNKNOWN status using -g/--global check (6.14.0)
+# Apr 29, 2023: Claudio Kuenzler - Add possibility to hide serial number (--hide-sn) (6.14.0)
+# Apr 29, 2023: Claudio Kuenzler - Add default check on Load Cycle Count (ignore using --skip-load-cycles) (6.14.0)
+# Sep 20, 2023: Yannick Martin - Fix default Percent_Lifetime_Remain threshold handling when -w is given (6.14.1)
+# Sep 20, 2023: Claudio Kuenzler - Fix debug output for raw check list, fix --hide-serial in debug output (6.14.1)
 
 use strict;
 use Getopt::Long;
 use File::Basename qw(basename);
 
 my $basename = basename($0);
-my $revision = '6.7.1';
+my $revision = '6.14.1';
 
 # Standard Nagios return codes
 my %ERRORS=('OK'=>0,'WARNING'=>1,'CRITICAL'=>2,'UNKNOWN'=>3,'DEPENDENT'=>4);
 
 
-$ENV{'PATH'}='/bin:/usr/bin:/sbin:/usr/sbin:/usr/local/bin:/usr/local/sbin';
+my @sys_path = qw(/usr/bin /bin /usr/sbin /sbin /usr/local/bin /usr/local/sbin);
 $ENV{'BASH_ENV'}='';
 $ENV{'ENV'}='';
 
-use vars qw($opt_b $opt_d $opt_g $opt_debug $opt_h $opt_i $opt_e $opt_E $opt_r $opt_s $opt_v $opt_w $opt_q);
+use vars qw($opt_b $opt_d $opt_g $opt_debug $opt_h $opt_i $opt_e $opt_E $opt_r $opt_s $opt_v $opt_w $opt_q $opt_l $opt_skip_sa $opt_skip_temp $opt_skip_load_cycles $opt_hide_sn);
 Getopt::Long::Configure('bundling');
 GetOptions(
                           "debug"         => \$opt_debug,
@@ -75,6 +92,11 @@ GetOptions(
         "s"   => \$opt_s, "selftest"      => \$opt_s,
         "v"   => \$opt_v, "version"       => \$opt_v,
         "w=s" => \$opt_w, "warn=s"        => \$opt_w,
+        "l"   => \$opt_l, "ssd-lifetime"  => \$opt_l,
+			  "skip-self-assessment" => \$opt_skip_sa,
+			  "skip-temp-check" => \$opt_skip_temp,
+			  "skip-load-cycles" => \$opt_skip_load_cycles,
+			  "hide-sn" => \$opt_hide_sn,
 );
 
 if ($opt_v) {
@@ -90,7 +112,8 @@ if ($opt_h) {
 my ($device, $interface) = qw// // '';
 if ($opt_d || $opt_g ) {
         unless($opt_i){
-                print "must specify an interface for $opt_d using -i/--interface!\n\n";
+                print "must specify an interface for $opt_d using -i/--interface!\n\n" if $opt_d;
+                print "must specify an interface for $opt_g using -i/--interface!\n\n" if $opt_g;
                 print_help();
                 exit $ERRORS{'UNKNOWN'};
         }
@@ -108,8 +131,8 @@ if ($opt_d || $opt_g ) {
 
         foreach my $opt_dl (@dev){
             warn "Found $opt_dl\n" if $opt_debug;
-            if (-b $opt_dl || -c $opt_dl || $opt_dl =~ m/\/dev\/bus\/\d/) {
-                $device .= $opt_dl.":";
+            if (-b $opt_dl || -c $opt_dl || $opt_dl =~ m/^\/dev\/bus\/\d$/) {
+                $device .= $opt_dl."|";
 
             } else {
                 warn "$opt_dl is not a valid block/character special device!\n\n" if $opt_debug;
@@ -125,28 +148,34 @@ if ($opt_d || $opt_g ) {
         # Allow all device types currently supported by smartctl
         # See http://www.smartmontools.org/wiki/Supported_RAID-Controllers
 
-        if ($opt_i =~ m/(ata|scsi|3ware|areca|hpt|cciss|megaraid|sat|auto|nvme)/) {
+        if ($opt_i =~ m/^(ata|scsi|3ware|areca|hpt|aacraid|cciss|megaraid|sat|auto|nvme)/) {
             $interface = $opt_i;
           if($interface =~ m/megaraid,\[(\d{1,2})-(\d{1,2})\]/) {
             $interface = "";
             for(my $k = $1; $k <= $2; $k++) {
-              $interface .= "megaraid," . $k . ":";
+              $interface .= "megaraid," . $k . "|";
             }
           }
           elsif($interface =~ m/3ware,\[(\d{1,2})-(\d{1,2})\]/) {
             $interface = "";
             for(my $k = $1; $k <= $2; $k++) {
-              $interface .= "3ware," . $k . ":";
+              $interface .= "3ware," . $k . "|";
             }
           }
           elsif($interface =~ m/cciss,\[(\d{1,2})-(\d{1,2})\]/) {
             $interface = "";
             for(my $k = $1; $k <= $2; $k++) {
-              $interface .= "cciss," . $k . ":";
+              $interface .= "cciss," . $k . "|";
+            }
+          }
+          elsif($interface =~ m/aacraid,\[(\d{1,2})-(\d{1,2})\]/) {
+            $interface = "";
+            for(my $k = $1; $k <= $2; $k++) {
+              $interface .= "aacraid," . $k . "|";
             }
           }
           else {
-            $interface .= ":";
+            $interface .= "|";
           }
         } else {
                 print "invalid interface $opt_i for $opt_d!\n\n";
@@ -162,8 +191,19 @@ if ($device eq "") {
     exit $ERRORS{'UNKNOWN'};
 }
 
+my $smart_command = undef;
+foreach my $path (@sys_path) {
+	if (-x "$path/smartctl") {
+		$smart_command = "sudo $path/smartctl";
+		last;
+	}
+}
 
-my $smart_command = 'sudo smartctl';
+if (!defined($smart_command)) {
+	print "UNKNOWN - Could not find executable smartctl in " . join(", ", @sys_path) . "\n";
+	exit $ERRORS{'UNKNOWN'};
+}
+
 my $exit_status = 'OK';
 my $exit_status_local = 'OK';
 my $status_string = '';
@@ -180,8 +220,9 @@ my @exclude_perfdata = split /,/, $opt_E // '';
 push(@exclude_checks, @exclude_perfdata);
 
 # raw check list
-my $raw_check_list = $opt_r // 'Current_Pending_Sector,Reallocated_Sector_Ct,Program_Fail_Cnt_Total,Uncorrectable_Error_Cnt,Offline_Uncorrectable,Runtime_Bad_Block,Reported_Uncorrect,Reallocated_Event_Count';
+my $raw_check_list = $opt_r // 'Current_Pending_Sector,Reallocated_Sector_Ct,Program_Fail_Cnt_Total,Uncorrectable_Error_Cnt,Offline_Uncorrectable,Runtime_Bad_Block,Reported_Uncorrect,Reallocated_Event_Count,Erase_Fail_Count_Total';
 my @raw_check_list = split /,/, $raw_check_list;
+push @raw_check_list, 'Percent_Lifetime_Remain' if $opt_l;
 
 # raw check list for nvme
 my $raw_check_list_nvme = $opt_r // 'Media_and_Data_Integrity_Errors';
@@ -197,6 +238,9 @@ foreach my $warn_element (@warn_list) {
   ($warn_key, $warn_value) = split /=/, $warn_element;
   $warn_list{ $warn_key } = $warn_value;
 }
+if ($opt_l && ! exists $warn_list{'Percent_Lifetime_Remain'}) {
+    $warn_list{'Percent_Lifetime_Remain'} = 90;
+}
 
 # For backward compatibility, add -b parameter to warning thresholds
 if ($opt_b) {
@@ -205,12 +249,16 @@ if ($opt_b) {
 
 my @drives_status_okay;
 my @drives_status_not_okay;
+my @drives_status_warning;
+my @drives_status_critical;
+my @drives_status_unknown;
 my $drive_details;
 
-
-foreach $device ( split(":",$device) ){
-	foreach $interface ( split(":",$interface) ){
+foreach $device ( split("\\|",$device) ){
+	foreach $interface ( split("\\|",$interface) ){
 		my @error_messages = qw//;
+		my @warning_messages = qw//;
+		my @notice_messages = qw//;
 		my($status_string_local)='';
 		my($tag,$label);
 		$exit_status_local = 'OK';
@@ -219,7 +267,7 @@ foreach $device ( split(":",$device) ){
 			# we had a pattern based on $opt_g
 			$tag   = $device;
 			$tag   =~ s/\Q$opt_g\E//;
-                        if($interface =~ qr/(?:megaraid|3ware|cciss)/){ 
+                        if($interface =~ qr/(?:megaraid|3ware|aacraid|cciss)/){
 			  $label = "[$interface] - "; 
                         } else {
 			  $label = "[$device] - ";
@@ -236,6 +284,7 @@ foreach $device ( split(":",$device) ){
 		warn "###########################################################\n\n\n" if $opt_debug;
 
 		my $full_command = "$smart_command -d $interface -Hi $device";
+		$full_command = "$smart_command -d $interface -Hi $device -q noserial" if $opt_hide_sn;
 		warn "(debug) executing:\n$full_command\n\n" if $opt_debug;
 
 		my @output = `$full_command`;
@@ -261,32 +310,34 @@ foreach $device ( split(":",$device) ){
 			if($line =~ /$line_str_scsi(.+)/){
 				$found_status = 1;
 				$output_mode = "scsi";
-				warn "(debug) parsing line:\n$line\n\n" if $opt_debug;
+				warn "(debug) parsing line:\n$line\n" if $opt_debug;
 				if ($1 eq $ok_str_scsi) {
-					warn "(debug) found string '$ok_str_scsi'; status OK\n\n" if $opt_debug;
+					warn "(debug) found string '$ok_str_scsi'; status OK\n" if $opt_debug;
 				}
 				else {
-					warn "(debug) no '$ok_str_scsi' status; failing\n\n" if $opt_debug;
-					push(@error_messages, "Health status: $1");
-					escalate_status('CRITICAL');
+					warn "(debug) no '$ok_str_scsi' status; failing\n" if $opt_debug;
+					warn "(debug) no '$ok_str_scsi' status; failing but ignoring" if $opt_debug && $opt_skip_sa;
+					push(@error_messages, "Health status: $1") unless $opt_skip_sa;
+					escalate_status('CRITICAL') unless $opt_skip_sa;
 				}
 			}
 			elsif($line =~ /$line_str_ata(.+)/){
 				$found_status = 1;
 				if ($interface eq 'nvme') {
 					$output_mode = "nvme";
-					warn "(debug) setting output mode to nvme\n\n" if $opt_debug;
+					warn "(debug) setting output mode to nvme\n" if $opt_debug;
 				} else {
 					$output_mode = "ata";
 				}
-				warn "(debug) parsing line:\n$line\n\n" if $opt_debug;
+				warn "(debug) parsing line:\n$line\n" if $opt_debug;
 				if ($1 eq $ok_str_ata) {
-					warn "(debug) found string '$ok_str_ata'; status OK\n\n" if $opt_debug;
+					warn "(debug) found string '$ok_str_ata'; status OK\n" if $opt_debug;
 				}
 				else {
-					warn "(debug) no '$ok_str_ata' status; failing\n\n" if $opt_debug;
-					push(@error_messages, "Health status: $1");
-					escalate_status('CRITICAL');
+					warn "(debug) no '$ok_str_ata' status; failing\n" if $opt_debug;
+					warn "(debug) no '$ok_str_ata' status; failing but ignoring\n" if $opt_debug && $opt_skip_sa;
+					push(@error_messages, "Health status: $1") unless $opt_skip_sa;
+					escalate_status('CRITICAL') unless $opt_skip_sa;
 				}
 			}
 			if($line =~ /$line_model_ata(.+)/){
@@ -315,8 +366,13 @@ foreach $device ( split(":",$device) ){
 			}
 			if($line =~ /$line_serial_ata(.+)/){
 				warn "(debug) parsing line:\n$line\n\n" if $opt_debug;
-				$serial = $1;
-				$serial =~ s/^\s+|\s+$//g;
+				if($opt_hide_sn) {
+				  $serial = "<HIDDEN>";
+				  warn "(debug) Hiding serial number\n\n" if $opt_debug;
+				} else {
+				  $serial = $1;
+				  $serial =~ s/^\s+|\s+$//g;
+				}
 				warn "(debug) found serial number $serial\n\n" if $opt_debug;
 			}
 			if($line =~ /$line_serial_scsi(.+)/){
@@ -354,7 +410,7 @@ foreach $device ( split(":",$device) ){
 			escalate_status('UNKNOWN');
 		}
 		if ($return_code & 0x04) {
-			push(@error_messages, 'Checksum failure');
+			push(@warning_messages, 'Checksum failure');
 			escalate_status('WARNING');
 		}
 		if ($return_code & 0x08) {
@@ -362,19 +418,19 @@ foreach $device ( split(":",$device) ){
 			escalate_status('CRITICAL');
 		}
 		if ($return_code & 0x10) {
-			push(@error_messages, 'Disk is in prefail');
+			push(@warning_messages, 'Disk is in prefail');
 			escalate_status('WARNING');
 		}
 		if ($return_code & 0x20) {
-			push(@error_messages, 'Disk may be close to failure');
+			push(@warning_messages, 'Disk may be close to failure');
 			escalate_status('WARNING');
 		}
 		if ($return_code & 0x40) {
-			push(@error_messages, 'Error log contains errors');
+			push(@warning_messages, 'Error log contains errors');
 			escalate_status('WARNING');
 		}
 		if ($return_code & 0x80) {
-			push(@error_messages, 'Self-test log contains errors');
+			push(@warning_messages, 'Self-test log contains errors');
 			escalate_status('WARNING');
 		}
 		if ($return_code && !$exit_status_local) {
@@ -396,7 +452,7 @@ foreach $device ( split(":",$device) ){
 			warn "(debug) exit code:\n$return_code\n\n" if $opt_debug;
 
 			if ($return_code > 0) {
-				push(@error_messages, 'Self-test log contains errors');
+				push(@warning_messages, 'Self-test log contains errors');
 				warn "(debug) Self-test log contains errors\n\n" if $opt_debug;
 				escalate_status('WARNING');
 			}
@@ -419,7 +475,8 @@ foreach $device ( split(":",$device) ){
 		@output = `$full_command`;
 		warn "(debug) output:\n@output\n\n" if $opt_debug;
 		my @perfdata = qw//;
-		warn "(debug) Raw Check List: $raw_check_list\n" if $opt_debug;
+		warn "(debug) Raw Check List ATA: @raw_check_list\n" if $opt_debug;
+		warn "(debug) Raw Check List NVMe: $raw_check_list_nvme\n" if $opt_debug;
 		warn "(debug) Exclude List for Checks: ", join(",", @exclude_checks), "\n" if $opt_debug;
 		warn "(debug) Exclude List for Perfdata: ", join(",", @exclude_perfdata), "\n" if $opt_debug;
 		warn "(debug) Warning Thresholds:\n" if $opt_debug;
@@ -439,7 +496,7 @@ foreach $device ( split(":",$device) ){
 					if (grep {$_ eq $attribute_number || $_ eq $attribute_name || $_ eq $when_failed} @exclude_checks) {
 					  warn "SMART Attribute $attribute_name failed at $when_failed but was set to be ignored\n" if $opt_debug;
 					} else {
-					push(@error_messages, "Attribute $attribute_name failed at $when_failed");
+					push(@warning_messages, "Attribute $attribute_name failed at $when_failed");
 					escalate_status('WARNING');
 					warn "(debug) parsed SMART attribute $attribute_name with error condition:\n$when_failed\n\n" if $opt_debug;
 					}
@@ -457,21 +514,34 @@ foreach $device ( split(":",$device) ){
 					warn "(debug) SMART Attribute $attribute_name was set to be ignored\n\n" if $opt_debug;
 					next;
 				} else {
+				# alert for high load cycles, generally up to 600K cycles are considered safe on HDDs
+				unless($opt_skip_load_cycles) {
+				  if ($attribute_number == 193) {
+					if ($raw_value > 600000) {
+					  warn "(debug) $attribute_name is above value considered safe (600K)\n\n" if $opt_debug;
+					  push(@error_messages, "$attribute_name is above 600K load cycles ($raw_value) causing possible performance and durability impact");
+					  escalate_status('CRITICAL');
+					} elsif ($raw_value < 600000 && $raw_value > 550000) {
+					  warn "(debug) $attribute_name is nearing 600K load cycles\n\n" if $opt_debug;
+				          push(@warning_messages, "$attribute_name is soon reaching 600K load cycles ($raw_value) causing possible performance and durability impact soon");
+					}
+				  }
+				}
 				# manual checks on raw values for certain attributes deemed significant
 				  if (grep {$_ eq $attribute_name} @raw_check_list) {
 				    if ($raw_value > 0) {
 				      # Check for warning thresholds
 				      if ( ($warn_list{$attribute_name}) && ($raw_value >= $warn_list{$attribute_name}) ) {
 				        warn "(debug) $attribute_name is non-zero ($raw_value)\n\n" if $opt_debug;
-				        push(@error_messages, "$attribute_name is non-zero ($raw_value)");
+				        push(@warning_messages, "$attribute_name is non-zero ($raw_value)");
 				        escalate_status('WARNING');
 				      } elsif ( ($warn_list{$attribute_name}) && ($raw_value < $warn_list{$attribute_name}) ) {
 					warn "(debug) $attribute_name is non-zero ($raw_value) but less than $warn_list{$attribute_name}\n\n" if $opt_debug;
-					push(@error_messages, "$attribute_name is non-zero ($raw_value) (but less than threshold $warn_list{$attribute_name})");
+					push(@notice_messages, "$attribute_name is non-zero ($raw_value) (but less than threshold $warn_list{$attribute_name})");
 				      }
 				      else {
 				        warn "(debug) $attribute_name is non-zero ($raw_value)\n\n" if $opt_debug;
-				        push(@error_messages, "$attribute_name is non-zero ($raw_value)");
+				        push(@warning_messages, "$attribute_name is non-zero ($raw_value)");
 				        escalate_status('WARNING');
 				      }
 				    } else {
@@ -489,6 +559,7 @@ foreach $device ( split(":",$device) ){
 				my ($attribute_name, $raw_value) = ($1, $2);
 				$raw_value =~ s/\s|,//g;
 				$attribute_name =~ s/\s/_/g;
+				$attribute_name =~ s/\.//g;
 
 				# some attributes produce irrelevant data; no need to graph them
 				if (grep {$_ eq $attribute_name} ('Critical_Warning') ){
@@ -508,67 +579,67 @@ foreach $device ( split(":",$device) ){
 				# Handle Critical_Warning values
 				if ($attribute_name eq 'Critical_Warning') {
 					if ($raw_value eq '0x01') {
-					  push(@error_messages, "Available spare below threshold");
+					  push(@warning_messages, "Available spare below threshold");
 				          escalate_status('WARNING');
 					}
 					elsif ($raw_value eq '0x02') {
-					  push(@error_messages, "Temperature is above or below thresholds");
+					  push(@warning_messages, "Temperature is above or below thresholds");
 				          escalate_status('WARNING');
 					}
 					elsif ($raw_value eq '0x03') {
-					  push(@error_messages, "Available spare below threshold and temperature is above or below thresholds");
+					  push(@warning_messages, "Available spare below threshold and temperature is above or below thresholds");
 				          escalate_status('WARNING');
 					}
 					elsif ($raw_value eq '0x04') {
-					  push(@error_messages, "NVM subsystem reliability degraded");
+					  push(@warning_messages, "NVM subsystem reliability degraded");
 				          escalate_status('WARNING');
 					}
 					elsif ($raw_value eq '0x05') {
-					  push(@error_messages, "Available spare below threshold and NVM subsystem reliability degraded");
+					  push(@warning_messages, "Available spare below threshold and NVM subsystem reliability degraded");
 				          escalate_status('WARNING');
 					}
 					elsif ($raw_value eq '0x06') {
-					  push(@error_messages, "Temperature is above or below thresholds and NVM subsystem reliability degraded");
+					  push(@warning_messages, "Temperature is above or below thresholds and NVM subsystem reliability degraded");
 				          escalate_status('WARNING');
 					}
 					elsif ($raw_value eq '0x07') {
-					  push(@error_messages, "Available spare below threshold and Temperature is above or below thresholds and NVM subsystem reliability degraded");
+					  push(@warning_messages, "Available spare below threshold and Temperature is above or below thresholds and NVM subsystem reliability degraded");
 				          escalate_status('WARNING');
 					}
 					elsif ($raw_value eq '0x08') {
-					  push(@error_messages, "Media in read only mode");
+					  push(@warning_messages, "Media in read only mode");
 				          escalate_status('WARNING');
 					}
 					elsif ($raw_value eq '0x09') {
-					  push(@error_messages, "Media in read only mode and Available spare below threshold");
+					  push(@warning_messages, "Media in read only mode and Available spare below threshold");
 				          escalate_status('WARNING');
 					}
 					elsif ($raw_value eq '0x0A') {
-					  push(@error_messages, "Media in read only mode and Temperature is above or below thresholds");
+					  push(@warning_messages, "Media in read only mode and Temperature is above or below thresholds");
 				          escalate_status('WARNING');
 					}
 					elsif ($raw_value eq '0x0B') {
-					  push(@error_messages, "Media in read only mode and Temperature is above or below thresholds and Available spare below threshold");
+					  push(@warning_messages, "Media in read only mode and Temperature is above or below thresholds and Available spare below threshold");
 				          escalate_status('WARNING');
 					}
 					elsif ($raw_value eq '0x0C') {
-					  push(@error_messages, "Media in read only mode and NVM subsystem reliability degraded");
+					  push(@warning_messages, "Media in read only mode and NVM subsystem reliability degraded");
 				          escalate_status('WARNING');
 					}
 					elsif ($raw_value eq '0x0D') {
-					  push(@error_messages, "Media in read only mode and NVM subsystem reliability degraded and Available spare below threshold");
+					  push(@warning_messages, "Media in read only mode and NVM subsystem reliability degraded and Available spare below threshold");
 				          escalate_status('WARNING');
 					}
 					elsif ($raw_value eq '0x0E') {
-					  push(@error_messages, "Media in read only mode and NVM subsystem reliability degraded and Temperature is above or below thresholds");
+					  push(@warning_messages, "Media in read only mode and NVM subsystem reliability degraded and Temperature is above or below thresholds");
 				          escalate_status('WARNING');
 					}
 					elsif ($raw_value eq '0x0F') {
-					  push(@error_messages, "Media in read only mode and NVM subsystem reliability degraded and Temperature is above or below thresholds");
+					  push(@warning_messages, "Media in read only mode and NVM subsystem reliability degraded and Temperature is above or below thresholds");
 				          escalate_status('WARNING');
 					}
 					elsif ($raw_value eq '0x10') {
-					  push(@error_messages, "Volatile memory backup device failed");
+					  push(@warning_messages, "Volatile memory backup device failed");
 				          escalate_status('WARNING');
 					}
 				}
@@ -579,14 +650,14 @@ foreach $device ( split(":",$device) ){
 					  # Check for warning thresholds
 					  if ( ($warn_list{$attribute_name}) && ($raw_value >= $warn_list{$attribute_name}) ) {
 					    warn "(debug) $attribute_name is non-zero ($raw_value)\n\n" if $opt_debug;
-					    push(@error_messages, "$attribute_name is non-zero ($raw_value)");
+					    push(@warning_messages, "$attribute_name is non-zero ($raw_value)");
 					    escalate_status('WARNING');
 					  } elsif ( ($warn_list{$attribute_name}) && ($raw_value < $warn_list{$attribute_name}) ) {
 					    warn "(debug) $attribute_name is non-zero ($raw_value) but less than $warn_list{$attribute_name}\n\n" if $opt_debug;
-					    push(@error_messages, "$attribute_name is non-zero ($raw_value) (but less than threshold $warn_list{$attribute_name})");
+					    push(@notice_messages, "$attribute_name is non-zero ($raw_value) (but less than threshold $warn_list{$attribute_name})");
 					  } else {
 					    warn "(debug) $attribute_name is non-zero ($raw_value)\n\n" if $opt_debug;
-					    push(@error_messages, "$attribute_name is non-zero ($raw_value)");
+					    push(@warning_messages, "$attribute_name is non-zero ($raw_value)");
 					    escalate_status('WARNING');
 					  }
 				       } else {
@@ -617,19 +688,19 @@ foreach $device ( split(":",$device) ){
 					if ($opt_b) {
 						push (@perfdata, "defect_list=$defectlist;;$opt_b") if $opt_d;
 						if (($defectlist > 0) && ($defectlist >= $opt_b)) {
-							push(@error_messages, "$defectlist Elements in grown defect list (threshold $opt_b)");
+							push(@warning_messages, "$defectlist Elements in grown defect list (threshold $opt_b)");
 							escalate_status('WARNING');
 							warn "(debug) Elements in grown defect list is non-zero ($defectlist)\n\n" if $opt_debug;
 						}
 						elsif (($defectlist > 0) && ($defectlist < $opt_b)) {
-							push(@error_messages, "Note: $defectlist Elements in grown defect list");
+							push(@warning_messages, "Note: $defectlist Elements in grown defect list");
 							warn "(debug) Elements in grown defect list is non-zero ($defectlist) but less than $opt_b\n\n" if $opt_debug;
 						}
 					}
 					else {
 						if ($defectlist > 0) {
 							push (@perfdata, "defect_list=$defectlist") if $opt_d;
-							push(@error_messages, "$defectlist Elements in grown defect list");
+							push(@warning_messages, "$defectlist Elements in grown defect list");
 							escalate_status('WARNING');
 							warn "(debug) Elements in grown defect list is non-zero ($defectlist)\n\n" if $opt_debug;
 						}
@@ -642,10 +713,12 @@ foreach $device ( split(":",$device) ){
 			if($current_temperature){
 				if($max_temperature){
 					push (@perfdata, "temperature=$current_temperature;;$max_temperature") if $opt_d;
-					if($current_temperature > $max_temperature){
-						warn "(debug) Disk temperature is greater than max ($current_temperature > $max_temperature)\n\n" if $opt_debug;
-						push(@error_messages, 'Disk temperature is higher than maximum');
-						escalate_status('CRITICAL');
+					unless($opt_skip_temp) {
+						if($current_temperature > $max_temperature){
+							warn "(debug) Disk temperature is greater than max ($current_temperature > $max_temperature)\n\n" if $opt_debug;
+							push(@error_messages, 'Disk temperature is higher than maximum');
+							escalate_status('CRITICAL');
+						}
 					}
 				}
 				else{
@@ -657,7 +730,7 @@ foreach $device ( split(":",$device) ){
 					push (@perfdata, "start_stop=$current_start_stop;$max_start_stop") if $opt_d;
 					if($current_start_stop > $max_start_stop){
 						warn "(debug) Disk start_stop is greater than max ($current_start_stop > $max_start_stop)\n\n" if $opt_debug;
-						push(@error_messages, 'Disk start_stop is higher than maximum');
+						push(@warning_messages, 'Disk start_stop is higher than maximum');
 						escalate_status('WARNING');
 					}
 				}
@@ -676,20 +749,41 @@ foreach $device ( split(":",$device) ){
 		if($exit_status_local ne 'OK'){
 		  if ($opt_g) {
 			$status_string = $label.join(', ', @error_messages);
+			$status_string .= $label.join(', ', @warning_messages);
+			$status_string .= $label.join(', ', @notice_messages);
 		  }
 		  else {
 			$drive_details = "Drive $model S/N $serial: ";
-			$status_string = join(', ', @error_messages);
+			$status_string = join(', ', @error_messages, '');
+			$status_string .= join(', ', @warning_messages, '');
+			$status_string .= join(', ', @notice_messages);
 		  }
-		  push @drives_status_not_okay, $status_string;
-		} 
+		  if ($exit_status_local eq 'WARNING') {
+		    push @drives_status_warning, $status_string;
+		  } elsif ($exit_status_local eq 'CRITICAL') {
+		    push @drives_status_critical, $status_string;
+		  } elsif ($exit_status_local eq 'UNKNOWN') {
+		    push @drives_status_unknown, $status_string;
+		  }
+		}
 		else {
 		  if ($opt_g) {
 			$status_string = $label."Device is clean";
+			if (scalar(@error_messages) > 0) {
+				$status_string .= " ".$label.join(', ', @error_messages);
+			}
+			if (scalar(@warning_messages) > 0) {
+				$status_string .= " ".$label.join(', ', @warning_messages);
+			}
+			if (scalar(@notice_messages) > 0) {
+				$status_string .= " ".$label.join(', ', @notice_messages);
+			}
 		  }
 		  else {
 			$drive_details = "Drive $model S/N $serial: no SMART errors detected. ";
 			$status_string = join(', ', @error_messages);
+			$status_string .= join(', ', @warning_messages);
+			$status_string .= join(', ', @notice_messages);
 		  }
 		  push @drives_status_okay, $status_string;
 		}
@@ -699,6 +793,18 @@ foreach $device ( split(":",$device) ){
 warn "(debug) final status/output: $exit_status\n" if $opt_debug;
 
 my @msg_list = ($drive_details) if $drive_details;
+
+if (scalar(@drives_status_critical) > 0) {
+  push @drives_status_not_okay, @drives_status_critical;
+}
+
+if (scalar(@drives_status_warning) > 0) {
+  push @drives_status_not_okay, @drives_status_warning;
+}
+
+if (scalar(@drives_status_unknown) > 0) {
+  push @drives_status_not_okay, @drives_status_unknown;
+}
 
 if (@drives_status_not_okay) {
 	push @msg_list, grep { $_ } @drives_status_not_okay;
@@ -733,26 +839,32 @@ sub print_revision {
 
 sub print_help {
         print_revision($basename,$revision);
-        print "\nUsage: $basename {-d=<block device>|-g=<block device glob>} -i=(auto|ata|scsi|3ware,N|areca,N|hpt,L/M/N|cciss,N|megaraid,N) [-r list] [-w list] [-b N] [-e list] [-E list] [--debug]\n\n";
+        print "\nUsage: $basename {-d=<block device>|-g=<block device glob>} -i=(auto|ata|scsi|3ware,N|areca,N|hpt,L/M/N|aacraid,H,L,ID|cciss,N|megaraid,N) [-r list] [-w list] [-b N] [-e list] [-E list] [-s] [-l] [--debug]\n\n";
         print "At least one of the below. -d supersedes -g\n";
         print "  -d/--device: a physical block device to be SMART monitored, eg /dev/sda. Pseudo-device /dev/bus/N is allowed.\n";
         print "  -g/--global: a glob pattern name of physical devices to be SMART monitored\n";
         print "       Example: '/dev/sd[a-z]' will search for all /dev/sda until /dev/sdz devices and report errors globally.\n";
+        print "       Example: '/dev/sd*[a-z]' will search for all /dev/sda until /dev/sdzzzz etc devices and report errors globally.\n";
         print "       It is also possible to use -g in conjunction with megaraid devices. Example: -i 'megaraid,[0-3]'.\n";
         print "       Does not output performance data for historical value graphing.\n";
         print "Note that -g only works with a fixed interface (e.g. scsi, ata) and megaraid,N.\n";
         print "\n";
         print "Other options\n";
-        print "  -i/--interface: device's interface type (auto|ata|scsi|nvme|3ware,N|areca,N|hpt,L/M/N|cciss,N|megaraid,N)\n";
+        print "  -i/--interface: device's interface type (auto|ata|scsi|nvme|3ware,N|areca,N|hpt,L/M/N|aacraid,H,L,ID|cciss,N|megaraid,N)\n";
         print "  (See http://www.smartmontools.org/wiki/Supported_RAID-Controllers for interface convention)\n";
         print "  -r/--raw Comma separated list of ATA or NVMe attributes to check\n";
-        print "       ATA default: Current_Pending_Sector,Reallocated_Sector_Ct,Program_Fail_Cnt_Total,Uncorrectable_Error_Cnt,Offline_Uncorrectable,Runtime_Bad_Block\n";
+        print "       ATA default: Current_Pending_Sector,Reallocated_Sector_Ct,Program_Fail_Cnt_Total,Uncorrectable_Error_Cnt,Offline_Uncorrectable,Runtime_Bad_Block,Reported_Uncorrect,Reallocated_Event_Count\n";
         print "       NVMe default: Media_and_Data_Integrity_Errors\n";
         print "  -b/--bad: Threshold value for Current_Pending_Sector for ATA and 'grown defect list' for SCSI drives\n";
         print "  -w/--warn Comma separated list of thresholds for ATA drives (e.g. Reallocated_Sector_Ct=10,Current_Pending_Sector=62)\n";
         print "  -e/--exclude: Comma separated list of SMART attribute names or numbers which should be excluded (=ignored) with regard to checks\n";
         print "  -E/--exclude-all: Comma separated list of SMART attribute names or numbers which should be completely ignored for checks as well as perfdata\n";
-        print "  -s/--selftest: Enable self-test log check";
+        print "  -s/--selftest: Enable self-test log check\n";
+        print "  -l/--ssd-lifetime: Check attribute 'Percent_Lifetime_Remain' available on some SSD drives\n";
+        print "  --skip-self-assessment: Skip SMART self-assessment health status check\n";
+        print "  --skip-temp-check: Skip temperature comparison current vs. drive max temperature\n";
+        print "  --skip-load-cycles: Do not alert on high load/unload cycle count (600K considered safe on hard drives)\n";
+        print "  --hide-sn: Do not show drive serial number in output\n";
         print "  -h/--help: this help\n";
         print "  -q/--quiet: When faults detected, only show faulted drive(s) (only affects output when used with -g parameter)\n";
         print "  --debug: show debugging information\n";
