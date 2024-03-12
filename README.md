@@ -38,10 +38,11 @@ pip install pytz dateutils lxml idna certifi
 
 
 # As user nagios (temporary allow shell via vipw) in the home dir (/var/lib/nagios, check with pwd)
-git clone https://github.com/cheretbe/nagios-plugins.git
+# git clone https://github.com/cheretbe/nagios-plugins.git
+ansible -m ansible.builtin.git -a "repo=https://github.com/cheretbe/nagios-plugins.git dest=/var/lib/nagios/nagios-plugins" --become --become-user nagios linux_nagios_clients
 ```
 
-#### Auto-update
+#### Auto-update (deprecated)
 
 As root add to sudoers (`visudo`):
 ```
@@ -110,7 +111,9 @@ logrotate -d /etc/logrotate.d/nagios-plugins-update
 ```
 * https://www.digitalocean.com/community/tutorials/how-to-manage-log-files-with-logrotate-on-ubuntu-12-10
 
-`/etc/nagios/nrpe.cfg` entry example:
+## Config
+
+`/etc/nagios/nrpe_local.cfg` ~~`/etc/nagios/nrpe.cfg`~~ entry example:
 ```
 command[check_nagios_plugins_update_status]=/var/lib/nagios/nagios-plugins/check_status_file/check_status_file.py /var/lib/nagios/plugins_update_status
 ```
