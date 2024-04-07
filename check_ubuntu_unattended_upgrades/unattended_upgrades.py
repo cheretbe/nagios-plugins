@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 from __future__ import unicode_literals, print_function
 import subprocess, sys, os, re
 
@@ -15,7 +15,7 @@ def package_installed(package_name):
         @return: True if \a package_name is installed, False if not.
     """
     # command output
-    co = subprocess.check_output('dpkg -l {pn} | grep {pn}'.format(pn=package_name), shell=True)
+    co = subprocess.check_output('dpkg -l {pn} | grep {pn}'.format(pn=package_name), shell=True).decode('utf-8')
     # search match
     m = re.search(package_name, co)
     ret = True if m else False
@@ -65,13 +65,6 @@ try:
     parser.add_argument("-c", "--config-file", dest="config_file", default="",
         help='Custom config file')
     options = parser.parse_args()
-
-    # --- Check that 'update-notifier-common' is installed.
-    #    This isn't really necessary on Ubuntu machines, but will remind Debian users that this
-    #    package is necessary & other distro admins that they can't use this script.
-    if not package_installed('update-notifier-common'):
-        print("CRITICAL - Package 'update-notifier-common' missing.  This check is only for Ubuntu/Debian")
-        sys.exit(CRITICAL)
 
     # --- Check that 'unattended-upgrades' is installed.
     if not package_installed('unattended-upgrades'):
