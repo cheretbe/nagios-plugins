@@ -18,6 +18,12 @@ STATUS_UNKNOWN  = -1
 STATUS_OK       =  0
 STATUS_WARNING  =  1
 STATUS_CRITICAL =  2
+STATUS_NAMES = {
+    STATUS_OK: "OK",
+    STATUS_WARNING: "WARNING",
+    STATUS_CRITICAL: "CRITICAL",
+    STATUS_UNKNOWN: "UNKNOWN"
+}
 
 locale.setlocale(locale.LC_ALL, '')
 
@@ -79,8 +85,10 @@ def do_check_balance():
         session.get("https://stats.tis-dialog.ru/index.php?mod=exit")
     else:
         check_http_reply(session.get("https://stat.sovatelecom.ru/"))
-        post_data = {"LOGIN": options.login, "PASSWD": options.password,
-          "URL": "stat.sovatelecom.ru", "domain": "", "subm": "Вход"}
+        post_data = {
+            "LOGIN": options.login, "PASSWD": options.password,
+            "URL": "stat.sovatelecom.ru", "domain": "", "subm": "Вход"
+        }
         check_http_reply(session.post("https://stat.sovatelecom.ru/login_user.htms", data=post_data))
         response = session.get("https://stat.sovatelecom.ru/main.htms")
         check_http_reply(response)
@@ -88,11 +96,11 @@ def do_check_balance():
         print_verbose(u"Balance as string: {}".format(balance_str))
         balance = float(balance_str.replace(u"Остаток\xa0:\xa0", u"").replace(u" RUB", u"").replace(u",", u""))
 
-    # DEBUG
-    # # balance = 3.0
-    # balance = 454
-    # todays_withdrawal = False
-    # # todays_withdrawal = True
+    # # DEBUG
+    # balance = 5.57
+    # # balance = -524.43
+    # # todays_withdrawal = False
+    # todays_withdrawal = True
 
     print_verbose("Balance: {}".format(balance))
 
@@ -164,6 +172,7 @@ def main():
 
         check_status,check_message = do_check_balance()
         exit_code = check_status
+        print_verbose(f"Status: {STATUS_NAMES[check_status]}")
         print(check_message)
 
     except Exception as e:
