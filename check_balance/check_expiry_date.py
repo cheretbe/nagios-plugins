@@ -189,7 +189,8 @@ if __name__ == "__main__":
     exit_code = STATUS_OK
     try:
         parser = argparse.ArgumentParser(
-            exit_on_error=False,
+            # Fails on Python 3.8 (argparse 1.4) in manios/nagios image
+            # exit_on_error=False,
             description="Custom script to check expiration date of a service",
         )
 
