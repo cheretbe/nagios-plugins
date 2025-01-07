@@ -165,7 +165,10 @@ def do_check_balance():
             options.login,
             options.withdrawal_amount,
         )
-        if last_withdrawal_amount != f"-{options.withdrawal_amount},00":
+        expected_withdrawal_amount = "-{},00".format(
+            "{:,d}".format(options.withdrawal_amount).replace(",", " ")
+        )
+        if last_withdrawal_amount != expected_withdrawal_amount:
             return (
                 STATUS_CRITICAL,
                 f"Unexpected withdrawal of {last_withdrawal_amount}. {status_text}",
