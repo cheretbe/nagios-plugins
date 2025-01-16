@@ -52,11 +52,15 @@ def main(args):
                     status_icon = ""
                     if time_delta.total_seconds() > (args.warning * 60):
                         status_icon = "(!)"
-                        exit_status = STATUS_WARNING
+                        if exit_status != STATUS_CRITICAL:
+                            exit_status = STATUS_WARNING
                     if time_delta.total_seconds() > (args.critical * 60):
                         status_icon = "(!)"
                         exit_status = STATUS_CRITICAL
                     exit_status_text += f"{library}: {status} {status_icon}{str(time_delta)}"
+                else:
+                    exit_status = STATUS_CRITICAL
+                    exit_status_text += f"{library}: {status}"
 
         for library in seafile_status.keys():
             seafile_status[library] = seafile_status[library].isoformat()
