@@ -49,9 +49,7 @@ def get_expiry_dates(args):
 
     if args.provider == "pureservers":
         # https://docs.pureservers.org/
-        post_data = json.dumps(
-            {"region": "BY", "email": args.login, "password": args.password}
-        )
+        post_data = json.dumps({"region": "UK", "email": args.login, "password": args.password})
         login_response = session.post(
             "https://cp.pureservers.org/api/auth/login",
             headers={"Content-Type": "application/json"},
@@ -66,12 +64,8 @@ def get_expiry_dates(args):
         for server in server_list_response.json():
             service_obj = types.SimpleNamespace()
             # [!] 'expires_at' is in milliseconds, dividing it by 1000
-            service_obj.expires_at = datetime.date.fromtimestamp(
-                server["expires_at"] / 1000
-            )
-            service_obj.days_left = (
-                service_obj.expires_at - datetime.date.today()
-            ).days
+            service_obj.expires_at = datetime.date.fromtimestamp(server["expires_at"] / 1000)
+            service_obj.days_left = (service_obj.expires_at - datetime.date.today()).days
             service_obj.description = "{id} ({ip}): {date} ({days} day(s))".format(
                 id=server["num_id"],
                 ip=server["primary_ipv4"],
@@ -98,13 +92,9 @@ def get_expiry_dates(args):
         playwright.sync_api.expect(page.get_by_text("Мои серверы")).to_be_visible()
 
         page.get_by_text("Мои серверы").click()
-        playwright.sync_api.expect(
-            page.locator(".myservers__servers-group")
-        ).to_be_visible()
+        playwright.sync_api.expect(page.locator(".myservers__servers-group")).to_be_visible()
 
-        service_data_locator = page.locator(".myservers__server").filter(
-            has_not_text="Заказать Сервер"
-        )
+        service_data_locator = page.locator(".myservers__server").filter(has_not_text="Заказать Сервер")
         for i in range(service_data_locator.count()):
             # Expected data:
             # IP:193.17.183.102\nvpn-es\n19.01.2025\netc..
@@ -117,9 +107,7 @@ def get_expiry_dates(args):
                 month=int(service_expiry_data[1]),
                 day=int(service_expiry_data[0]),
             )
-            service_obj.days_left = (
-                service_obj.expires_at - datetime.date.today()
-            ).days
+            service_obj.days_left = (service_obj.expires_at - datetime.date.today()).days
             service_obj.description = "{id} ({ip}): {date} ({days} day(s))".format(
                 id=service_data[1],
                 ip=service_data[0],
@@ -130,9 +118,7 @@ def get_expiry_dates(args):
             print_verbose(verbose=args.verbose, verbose_msg=service_obj)
 
         page.locator(".header__container_user_button-group > div:nth-child(2)").click()
-        playwright.sync_api.expect(
-            page.get_by_role("button", name="Выйти из аккаунта")
-        ).to_be_visible()
+        playwright.sync_api.expect(page.get_by_role("button", name="Выйти из аккаунта")).to_be_visible()
         page.get_by_role("button", name="Выйти из аккаунта").click()
 
     result.status_string = "; ".join(x.description for x in result.services)
@@ -147,9 +133,7 @@ def main(args):
 
     print_verbose(
         verbose=args.verbose,
-        verbose_msg="Checking expiration dates for user {} on {}".format(
-            args.login, args.provider
-        ),
+        verbose_msg="Checking expiration dates for user {} on {}".format(args.login, args.provider),
     )
 
     # expiry_dates = types.SimpleNamespace(
