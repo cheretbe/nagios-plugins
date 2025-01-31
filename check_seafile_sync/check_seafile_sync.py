@@ -14,6 +14,13 @@ STATUS_OK = 0
 STATUS_WARNING = 1
 STATUS_CRITICAL = 2
 
+STATUS_NAMES = {
+    STATUS_OK: "OK",
+    STATUS_WARNING: "WARNING",
+    STATUS_CRITICAL: "CRITICAL",
+    STATUS_UNKNOWN: "UNKNOWN",
+}
+
 
 def main(args):
     exit_status = STATUS_OK
@@ -32,7 +39,7 @@ def main(args):
 
         for line in subprocess.check_output(("seaf-cli", "status"), universal_newlines=True).splitlines():
             if line[0] != "#":
-                library, status = line.split(maxsplit=1)
+                library, status = [x.strip() for x in line.split("\t")[0:2]]
                 if library not in seafile_status:
                     # Strip microseconds to emulate Linux 'date -Iseconds' behavior
                     seafile_status[library] = datetime.datetime.now().replace(microsecond=0)
@@ -73,6 +80,8 @@ def main(args):
         exit_status = STATUS_UNKNOWN
         exit_status_text = f"Unhandled exception: {e}"
 
+    if args.verbose:
+        print(f"Status: {STATUS_NAMES[exit_status]}")
     print(exit_status_text)
     sys.exit(exit_status)
 
@@ -84,6 +93,14 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "-c", "--critical", type=int, default=90, help="Warning threshold in minutes (default=90)"
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        dest="verbose",
+        action="store_true",
+        default=False,
+        help="Display verbose debug messages",
     )
     args = parser.parse_args()
 
