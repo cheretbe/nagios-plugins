@@ -44,6 +44,7 @@ def main(args):
                     # Strip microseconds to emulate Linux 'date -Iseconds' behavior
                     seafile_status[library] = datetime.datetime.now().replace(microsecond=0)
                 # https://github.com/haiwen/seafile/blob/master/daemon/sync-mgr.c#L473
+                # https://github.com/haiwen/seafile/blob/master/app/seaf-cli#L815
                 if exit_status_text:
                     exit_status_text += "; "
 
@@ -55,7 +56,15 @@ def main(args):
                 if status == "synchronized":
                     exit_status_text += f"{library}: {status}"
                     seafile_status[library] = datetime.datetime.now().replace(microsecond=0)
-                elif status in ["committing", "initializing", "downloading", "merging", "uploading"]:
+                elif status in [
+                    "committing",
+                    "initializing",
+                    "downloading",
+                    "downloading file list",
+                    "downloading files",
+                    "merging",
+                    "uploading",
+                ]:
                     time_delta = datetime.datetime.now().replace(microsecond=0) - seafile_status[library]
                     status_icon = ""
                     if time_delta.total_seconds() > (args.warning * 60):
