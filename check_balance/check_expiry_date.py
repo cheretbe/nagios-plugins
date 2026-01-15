@@ -48,27 +48,26 @@ def get_expiry_dates(args):
     session = requests.session()
 
     if args.provider == "pureservers":
-        # https://docs.pureservers.org/
-        post_data = json.dumps({"region": "UK", "email": args.login, "password": args.password})
+        post_data = json.dumps({"email": args.login, "password": args.password})
         login_response = session.post(
-            "https://cp.pureservers.org/api/auth/login",
+            "https://api.rifty.org/auth/login",
             headers={"Content-Type": "application/json"},
             data=post_data,
         )
         check_http_reply(login_response)
         server_list_response = session.get(
-            "https://cp.pureservers.org/api/servers/list",
+            "https://api.rifty.org/services/list?page=0&getPages=true&type=vps",
             headers={"session": login_response.headers["session"]},
         )
         check_http_reply(server_list_response)
-        for server in server_list_response.json():
+        for server in server_list_response.json()["list"]:
             service_obj = types.SimpleNamespace()
-            # [!] 'expires_at' is in milliseconds, dividing it by 1000
-            service_obj.expires_at = datetime.date.fromtimestamp(server["expires_at"] / 1000)
+            # [!] 'expireDate' is in milliseconds, dividing it by 1000
+            service_obj.expires_at = datetime.date.fromtimestamp(server["expireDate"] / 1000)
             service_obj.days_left = (service_obj.expires_at - datetime.date.today()).days
-            service_obj.description = "{id} ({ip}): {date} ({days} day(s))".format(
-                id=server["num_id"],
-                ip=server["primary_ipv4"],
+            service_obj.description = "{id} ({tariff}): {date} ({days} day(s))".format(
+                id=server["id"],
+                tariff=server["tariffName"],
                 date=service_obj.expires_at.strftime("%Y-%m-%d"),
                 days=service_obj.days_left,
             )
